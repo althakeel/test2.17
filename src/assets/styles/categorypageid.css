@@ -1,0 +1,2861 @@
+/* Wrapper */
+.pc-wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px 15px;
+  font-family: 'Montserrat', sans-serif;
+  color: #222;
+  min-height: calc(100vh - 200px);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Category Title */
+.pc-category-header {
+  display: flex;
+  justify-content: space-between; /* Title left, button right */
+  align-items: center;           /* Vertically center */
+  margin-bottom: 20px;           /* Optional spacing */
+}
+
+.pc-category-title {
+  text-transform: uppercase;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: 24px;
+}
+.pc-filter-actions{
+  margin-left: 5px;
+}
+
+.pc-category-title {
+  text-transform: uppercase;      /* Make text all capital letters */
+  font-family: 'Montserrat', sans-serif;  /* Use Montserrat font */
+  font-weight: 600;                /* Optional: adjust weight */
+  font-size: 24px;                 /* Optional: adjust size */
+}
+
+/* Grid */
+.pc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+/* Card */
+.pc-card {
+  border: 0.5px solid #eee5;
+  border-radius: 8px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  overflow: hidden;
+  transition: box-shadow 0.3s, transform 0.3s;
+}
+
+.pc-card:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  transform: translateY(-3px);
+}
+
+/* Image */
+.pc-card-image {
+  width: 200px;
+  height: 200px;
+  object-fit: fill;
+  border-radius: 5px;
+  background: #fff;
+  margin: 0 auto;
+}
+
+/* Card Title */
+.pc-card-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 5px 5px;
+  line-height: 1.3;
+  min-height: 10px;
+}
+
+/* Card Footer: Price + Add */
+.pc-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 8px 8px 8px;
+}
+
+.pc-price {
+  display: flex;
+  gap: 4px;
+  text-align: left;
+  flex-grow: 1; /* ensures it stays to the left */
+}
+.pc-card-divider {
+  height: 1px;
+  background: #eee;
+  margin: 5px 0 8px 0; /* Adjust spacing as needed */
+  width: 100%;
+}
+
+.pc-price-int {
+  font-size: 18px;
+  font-weight: bold;
+
+}
+
+.pc-price-dec {
+  font-size: 12px;
+  vertical-align: super;
+  margin-left: 2px;
+}
+
+.pc-aed-icon {
+  height: 15px; 
+  margin-right: 5px;
+}
+
+/* Add Button */
+.pc-add-btn {
+  background: transparent;
+  border: 0.5px solid #dddddd;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.pc-add-btn:hover {
+  transform: scale(1.1);
+}
+
+.pc-add-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Added state */
+.pc-added {
+  border-color: #f57206;
+}
+
+/* Load More */
+.pc-load-more-wrapper {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.pc-load-more-btn {
+  background: #f57206;
+  color: #fff;
+  border: none;
+  padding: 10px 25px;
+  border-radius: 25px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.pc-load-more-btn:hover {
+  background: #cc5f06;
+}
+
+/* Skeleton */
+.pc-card-skeleton {
+  height: 280px;
+  background: #f2f2f2;
+  border-radius: 8px;
+  animation: pc-shimmer 1.2s infinite linear;
+}
+
+@keyframes pc-shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+}
+
+/* No products */
+.pc-no-products {
+  min-height: 300px;
+  text-align: center;
+  padding-top: 40px;
+  font-size: 18px;
+  color: #666;
+}
+
+/* Fixed Cart Icon */
+#pc-cart-icon {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+@media (max-width: 768px) {
+  .pc-grid {
+    grid-template-columns: repeat(2, 1fr); /* 2 columns */
+    gap: 10px; /* optional: reduce gap on mobile */
+  }
+
+  .pc-card-image {
+    width: 100%;
+    height: 180px; /* adjust image height for smaller screens */
+  }
+}
+/* No Products Section */
+.pc-no-products {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.pc-no-products-animation {
+  margin-bottom: 30px;
+  animation: floatUpDown 3s ease-in-out infinite;
+}
+
+.pc-empty-box {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+
+.pc-box-lid {
+  position: absolute;
+  top: 0;
+  left: 10%;
+  width: 80%;
+  height: 20px;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff8787 100%);
+  border-radius: 4px 4px 0 0;
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+  animation: lidFloat 2s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+.pc-box-body {
+  position: absolute;
+  top: 25px;
+  left: 0;
+  width: 100%;
+  height: 95px;
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(79, 172, 254, 0.4);
+  animation: boxPulse 2s ease-in-out infinite;
+}
+
+.pc-box-body::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1.5s linear infinite;
+}
+
+.pc-no-products-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12px;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.pc-no-products-text {
+  font-size: 16px;
+  color: #666;
+  max-width: 400px;
+  line-height: 1.6;
+  animation: fadeInUp 0.8s ease-out;
+}
+
+/* Animations */
+@keyframes floatUpDown {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes lidFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-15px) rotate(-5deg);
+  }
+}
+
+@keyframes boxPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Products Container - fills available space */
+.pc-products-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Professional Empty State Animation */
+.pc-empty-icon {
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.1));
+  animation: gentleFloat 3s ease-in-out infinite;
+}
+
+.pc-circle-progress {
+  stroke-dasharray: 502;
+  stroke-dashoffset: 502;
+  animation: drawCircle 2s ease-out forwards;
+  transform-origin: center;
+}
+
+.pc-box-path {
+  animation: fadeInScale 1s ease-out 0.5s both;
+  transform-origin: center;
+}
+
+.pc-line-1, .pc-line-2 {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: drawLine 0.8s ease-out 1.2s forwards;
+}
+
+.pc-empty-text {
+  opacity: 0;
+  animation: fadeIn 0.5s ease-out 1.8s forwards;
+}
+
+.pc-no-products-title {
+  font-size: 26px;
+  font-weight: 600;
+  color: #333;
+  margin: 20px 0 12px;
+  animation: slideUp 0.6s ease-out 0.3s both;
+}
+
+.pc-no-products-text {
+  font-size: 15px;
+  color: #666;
+  line-height: 1.8;
+  max-width: 450px;
+  animation: slideUp 0.6s ease-out 0.5s both;
+}
+
+/* Animations */
+@keyframes gentleFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes drawCircle {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes fadeInScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes drawLine {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Clean Empty State Animation */
+.pc-empty-state {
+  position: relative;
+  width: 200px;
+  height: 200px;
+}
+
+.pc-search-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: searchPulse 2s ease-in-out infinite;
+}
+
+.pc-magnifier {
+  position: relative;
+  width: 100px;
+  height: 100px;
+}
+
+.pc-glass {
+  width: 80px;
+  height: 80px;
+  border: 6px solid #2196F3;
+  border-radius: 50%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  animation: glassRotate 3s linear infinite;
+}
+
+.pc-handle {
+  width: 6px;
+  height: 40px;
+  background: #2196F3;
+  position: absolute;
+  bottom: -5px;
+  right: 5px;
+  transform: rotate(45deg);
+  border-radius: 3px;
+  animation: handleWiggle 1s ease-in-out infinite;
+}
+
+.pc-floating-dots {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: 12px;
+}
+
+.pc-dot {
+  width: 12px;
+  height: 12px;
+  background: #FF9800;
+  border-radius: 50%;
+  animation: dotBounce 1.4s ease-in-out infinite;
+}
+
+.pc-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.pc-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* Animations */
+@keyframes searchPulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+}
+
+@keyframes glassRotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes handleWiggle {
+  0%, 100% {
+    transform: rotate(45deg);
+  }
+  50% {
+    transform: rotate(50deg);
+  }
+}
+
+@keyframes dotBounce {
+  0%, 80%, 100% {
+    transform: translateY(0);
+    opacity: 0.7;
+  }
+  40% {
+    transform: translateY(-20px);
+    opacity: 1;
+  }
+}
+
+/* E-commerce Empty Shopping Bag Animation */
+.pc-shopping-scene {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  margin: 0 auto;
+}
+
+.pc-shopping-bag {
+  position: relative;
+  width: 120px;
+  height: 140px;
+  margin: 0 auto;
+  animation: bagSwing 3s ease-in-out infinite;
+}
+
+.pc-bag-handles {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  height: 40px;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 15px;
+}
+
+.pc-handle-left,
+.pc-handle-right {
+  width: 35px;
+  height: 35px;
+  border: 4px solid #FF6B6B;
+  border-bottom: none;
+  border-radius: 50px 50px 0 0;
+  animation: handleBounce 2s ease-in-out infinite;
+}
+
+.pc-handle-right {
+  animation-delay: 0.3s;
+}
+
+.pc-bag-body {
+  position: absolute;
+  top: 30px;
+  width: 120px;
+  height: 110px;
+  background: linear-gradient(135deg, #FFA07A 0%, #FF6B6B 100%);
+  border-radius: 0 0 12px 12px;
+  box-shadow: 0 8px 20px rgba(255, 107, 107, 0.3);
+  animation: bagPulse 2s ease-in-out infinite;
+}
+
+.pc-bag-fold {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  height: 25px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, transparent 100%);
+  border-radius: 0 0 8px 8px;
+}
+
+.pc-sad-face {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  text-align: center;
+  animation: faceAppear 1s ease-out 0.5s both;
+}
+
+.pc-eye {
+  display: inline-block;
+  font-size: 20px;
+  color: #555;
+  margin: 0 8px;
+  animation: blink 3s ease-in-out infinite;
+}
+
+.pc-eye-right {
+  animation-delay: 0.1s;
+}
+
+.pc-mouth {
+  display: block;
+  font-size: 28px;
+  color: #999;
+  margin-top: -8px;
+  transform: rotate(180deg);
+  animation: mouthSad 2s ease-in-out infinite;
+}
+
+/* Animations */
+@keyframes bagSwing {
+  0%, 100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+@keyframes handleBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes bagPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+}
+
+@keyframes faceAppear {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes blink {
+  0%, 90%, 100% {
+    opacity: 1;
+  }
+  95% {
+    opacity: 0;
+  }
+}
+
+@keyframes mouthSad {
+  0%, 100% {
+    transform: rotate(180deg) translateY(0);
+  }
+  50% {
+    transform: rotate(180deg) translateY(2px);
+  }
+}
+
+/* Person Looking at Empty Bag */
+.pc-person {
+  position: absolute;
+  left: -10px;
+  top: 20px;
+  animation: personSway 3s ease-in-out infinite;
+}
+
+.pc-head {
+  width: 50px;
+  height: 50px;
+  background: #FDB777;
+  border-radius: 50%;
+  position: relative;
+  margin: 0 auto;
+  animation: headShake 2s ease-in-out infinite;
+}
+
+.pc-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.pc-eye {
+  font-size: 12px;
+  color: #333;
+  margin: 0 3px;
+  animation: eyeBlink 4s ease-in-out infinite;
+}
+
+.pc-eye-left {
+  position: absolute;
+  left: 12px;
+  top: 15px;
+}
+
+.pc-eye-right {
+  position: absolute;
+  right: 12px;
+  top: 15px;
+}
+
+.pc-sad-mouth {
+  position: absolute;
+  bottom: 12px;
+  font-size: 18px;
+  color: #555;
+  animation: mouthWobble 2s ease-in-out infinite;
+}
+
+.pc-body {
+  width: 60px;
+  height: 70px;
+  background: #4A90E2;
+  border-radius: 8px 8px 12px 12px;
+  position: relative;
+  margin: 0 auto;
+  margin-top: -5px;
+}
+
+.pc-arm {
+  position: absolute;
+  width: 8px;
+  height: 40px;
+  background: #4A90E2;
+  border-radius: 4px;
+  top: 5px;
+}
+
+.pc-arm-left {
+  left: -6px;
+  transform-origin: top center;
+  animation: armWave 2s ease-in-out infinite;
+}
+
+.pc-arm-right {
+  right: -6px;
+  transform-origin: top center;
+  animation: armWave 2s ease-in-out infinite 0.3s;
+}
+
+.pc-tear {
+  position: absolute;
+  font-size: 18px;
+  animation: tearFall 2s ease-in infinite;
+}
+
+.pc-tear-1 {
+  left: 10px;
+  top: 40px;
+  animation-delay: 0.5s;
+}
+
+.pc-tear-2 {
+  left: 30px;
+  top: 40px;
+  animation-delay: 1.5s;
+}
+
+/* Updated Shopping Bag Position */
+.pc-shopping-bag {
+  position: absolute;
+  right: 0;
+  top: 60px;
+  width: 100px;
+  height: 120px;
+  animation: bagFloat 3s ease-in-out infinite;
+}
+
+/* Animations */
+@keyframes personSway {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-5px);
+  }
+}
+
+@keyframes headShake {
+  0%, 100% {
+    transform: rotate(-2deg);
+  }
+  50% {
+    transform: rotate(2deg);
+  }
+}
+
+@keyframes eyeBlink {
+  0%, 95%, 100% {
+    opacity: 1;
+  }
+  97% {
+    opacity: 0;
+  }
+}
+
+@keyframes mouthWobble {
+  0%, 100% {
+    transform: scaleX(1);
+  }
+  50% {
+    transform: scaleX(1.1);
+  }
+}
+
+@keyframes armWave {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-15deg);
+  }
+  75% {
+    transform: rotate(5deg);
+  }
+}
+
+@keyframes tearFall {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(60px);
+  }
+}
+
+@keyframes bagFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+/* Complete Animation Story */
+.pc-shopping-scene {
+  position: relative;
+  width: 250px;
+  height: 200px;
+  margin: 0 auto;
+  overflow: visible;
+}
+
+/* Step 1-4: Person walks in, looks at bag, gets sad, walks to button */
+.pc-person {
+  position: absolute;
+  left: -150px;
+  top: 20px;
+  animation: 
+    personWalkIn 2s ease-out forwards,
+    personLookAtBag 1s ease-in-out 2s forwards,
+    personGetSad 1s ease-in-out 3s forwards,
+    personWalkToButton 2s ease-in-out 5s forwards;
+}
+
+.pc-head {
+  animation: 
+    headNormal 2s ease-out,
+    headLook 1s ease-in-out 2s forwards,
+    headSad 1s ease-in-out 3s forwards;
+}
+
+.pc-face .pc-eye {
+  animation: eyeNormal 3s, eyeSad 1s 3s forwards;
+}
+
+.pc-face .pc-sad-mouth {
+  opacity: 0;
+  animation: mouthAppear 0.5s 3.5s forwards;
+}
+
+/* Bag stays in center */
+.pc-shopping-bag {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 60px;
+  width: 100px;
+  height: 120px;
+}
+
+.pc-bag-body {
+  position: relative;
+  width: 100px;
+  height: 90px;
+  background: linear-gradient(135deg, #FFA07A 0%, #FF6B6B 100%);
+  border-radius: 0 0 12px 12px;
+  box-shadow: 0 8px 20px rgba(255, 107, 107, 0.3);
+}
+
+.pc-bag-handles {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 15px;
+  z-index: 1;
+}
+
+.pc-handle-left,
+.pc-handle-right {
+  width: 30px;
+  height: 30px;
+  border: 4px solid #FF6B6B;
+  border-bottom: none;
+  border-radius: 50px 50px 0 0;
+}
+
+/* Tears fall after sadness */
+.pc-tear {
+  position: absolute;
+  font-size: 16px;
+  opacity: 0;
+  animation: tearDrop 1.5s 4s forwards;
+}
+
+.pc-tear-1 {
+  left: 20px;
+  top: 50px;
+}
+
+.pc-tear-2 {
+  left: 35px;
+  top: 50px;
+  animation-delay: 4.3s;
+}
+
+/* Button appears after tears */
+.pc-new-arrivals-btn {
+  position: absolute;
+  right: -20px;
+  bottom: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 14px 24px;
+  border-radius: 30px;
+  font-weight: 600;
+  font-size: 14px;
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.5);
+  animation: buttonAppear 0.6s 5.5s forwards;
+  transition: transform 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pc-new-arrivals-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+}
+
+.pc-btn-icon {
+  font-size: 16px;
+  animation: iconSparkle 1s ease-in-out infinite;
+}
+
+.pc-btn-icon:last-child {
+  animation-delay: 0.5s;
+}
+
+/* Tooltip appears when person reaches button */
+.pc-tooltip {
+  position: absolute;
+  right: -30px;
+  bottom: 70px;
+  background: #333;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  animation: tooltipPop 0.4s 7s forwards;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.pc-tooltip-arrow {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #333;
+}
+
+/* Animation Keyframes */
+@keyframes personWalkIn {
+  0% {
+    left: -150px;
+  }
+  100% {
+    left: -10px;
+  }
+}
+
+@keyframes personLookAtBag {
+  0%, 100% {
+    transform: translateX(0) scaleX(1);
+  }
+  50% {
+    transform: translateX(10px) scaleX(1.1);
+  }
+}
+
+@keyframes personGetSad {
+  0% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateY(5px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes personWalkToButton {
+  0% {
+    left: -10px;
+  }
+  100% {
+    left: 120px;
+  }
+}
+
+@keyframes headNormal {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes headLook {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(15deg);
+  }
+}
+
+@keyframes headSad {
+  0% {
+    transform: rotate(15deg);
+  }
+  100% {
+    transform: rotate(0deg) translateY(3px);
+  }
+}
+
+@keyframes eyeNormal {
+  0%, 100% {
+    opacity: 1;
+  }
+}
+
+@keyframes eyeSad {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(0.8) translateY(2px);
+  }
+}
+
+@keyframes mouthAppear {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tearDrop {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+}
+
+@keyframes buttonAppear {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) rotate(-10deg);
+  }
+  60% {
+    transform: scale(1.1) rotate(5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes iconSparkle {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.7;
+  }
+}
+
+@keyframes tooltipPop {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  60% {
+    transform: translateY(-3px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Minimal Walking Person Design */
+.pc-person {
+  position: absolute;
+  left: -100px;
+  top: 30px;
+  animation: simpleWalk 4s ease-in-out forwards;
+}
+
+.pc-head {
+  width: 40px;
+  height: 40px;
+  background: #FFB88C;
+  border-radius: 50%;
+  margin: 0 auto 5px;
+  position: relative;
+}
+
+.pc-face .pc-eye {
+  position: absolute;
+  font-size: 8px;
+  color: #333;
+  top: 14px;
+}
+
+.pc-eye-left {
+  left: 10px;
+}
+
+.pc-eye-right {
+  right: 10px;
+}
+
+.pc-sad-mouth {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%) rotate(180deg);
+  font-size: 14px;
+  color: #666;
+  opacity: 0;
+  animation: sadFaceShow 0.5s 2.5s forwards;
+}
+
+.pc-body {
+  width: 50px;
+  height: 60px;
+  background: #5B9BD5;
+  border-radius: 10px;
+  margin: 0 auto;
+}
+
+.pc-legs {
+  width: 50px;
+  height: 50px;
+  position: relative;
+  margin: 0 auto;
+}
+
+.pc-leg {
+  width: 8px;
+  height: 40px;
+  background: #4A7FAD;
+  border-radius: 0 0 4px 4px;
+  position: absolute;
+  bottom: 0;
+  transform-origin: top center;
+}
+
+.pc-leg-left {
+  left: 10px;
+  animation: legWalk 0.6s ease-in-out infinite;
+}
+
+.pc-leg-right {
+  right: 10px;
+  animation: legWalk 0.6s ease-in-out infinite 0.3s;
+}
+
+/* Simplified animations */
+@keyframes simpleWalk {
+  0% {
+    left: -100px;
+  }
+  40% {
+    left: 60px;
+  }
+  50% {
+    left: 60px;
+  }
+  100% {
+    left: 160px;
+  }
+}
+
+@keyframes legWalk {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-25deg);
+  }
+  75% {
+    transform: rotate(25deg);
+  }
+}
+
+@keyframes sadFaceShow {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) rotate(180deg) scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) rotate(180deg) scale(1);
+  }
+}
+
+/* Update shopping scene for minimal design */
+.pc-shopping-scene {
+  width: 300px;
+  height: 180px;
+  overflow: hidden;
+}
+
+/* Simplified bag position */
+.pc-shopping-bag {
+  left: 50%;
+  transform: translateX(-50%);
+  top: 50px;
+}
+
+/* Simplified tears */
+.pc-tear {
+  left: 50px;
+  top: 55px;
+  animation: simpleTearFall 1s 3s forwards;
+}
+
+.pc-tear-2 {
+  left: 65px;
+  animation-delay: 3.2s;
+}
+
+@keyframes simpleTearFall {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+}
+
+/* Simplified button */
+.pc-new-arrivals-btn {
+  right: 20px;
+  bottom: 40px;
+  animation: simpleButtonPop 0.4s 4s forwards;
+}
+
+@keyframes simpleButtonPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Simplified tooltip */
+.pc-tooltip {
+  right: 10px;
+  bottom: 90px;
+  animation: simpleTooltip 0.3s 5s forwards;
+}
+
+@keyframes simpleTooltip {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   COMPLETE ANIMATION STORY - TIMELINE
+   ============================================
+   0-2s: Person walks in with legs
+   2-3s: Head looks down into basket (sees empty)
+   3-4s: Sad face appears and cries
+   4-5s: Think bubble appears
+   5-6s: Empty basket disappears
+   6-7s: Full basket with products appears
+   7-8s: Whoa reaction appears
+   8-9s: Button pops up with tooltip
+   ============================================ */
+
+/* Reset previous styles */
+.pc-person {
+  position: absolute;
+  left: -100px;
+  top: 30px;
+  animation: storyWalk 9s ease-in-out forwards;
+}
+
+.pc-head {
+  width: 40px;
+  height: 40px;
+  background: #FFB88C;
+  border-radius: 50%;
+  margin: 0 auto 5px;
+  position: relative;
+  transform-origin: center center;
+  animation: headLookDown 9s ease-in-out forwards;
+}
+
+/* Legs walking animation */
+.pc-legs {
+  width: 50px;
+  height: 50px;
+  position: relative;
+  margin: 0 auto;
+}
+
+.pc-leg {
+  width: 8px;
+  height: 40px;
+  background: #4A7FAD;
+  border-radius: 0 0 4px 4px;
+  position: absolute;
+  bottom: 0;
+  transform-origin: top center;
+}
+
+.pc-leg-left {
+  left: 10px;
+  animation: legWalkStory 0.6s ease-in-out infinite;
+}
+
+.pc-leg-right {
+  right: 10px;
+  animation: legWalkStory 0.6s ease-in-out infinite 0.3s;
+}
+
+/* Stop walking after arriving */
+@keyframes legWalkStory {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-25deg);
+  }
+  75% {
+    transform: rotate(25deg);
+  }
+}
+
+/* Person walking and stopping at basket */
+@keyframes storyWalk {
+  0% {
+    left: -100px;
+  }
+  22% {
+    left: 80px; /* Stops at basket */
+  }
+  100% {
+    left: 80px; /* Stays there */
+  }
+}
+
+/* Head looks down into basket */
+@keyframes headLookDown {
+  0%, 22% {
+    transform: rotate(0deg);
+  }
+  25%, 33% {
+    transform: rotate(30deg); /* Looks down into basket */
+  }
+  36%, 100% {
+    transform: rotate(0deg); /* Looks back up */
+  }
+}
+
+/* Sad face appears when seeing empty basket */
+.pc-sad-mouth {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%) rotate(180deg);
+  font-size: 14px;
+  color: #666;
+  opacity: 0;
+  animation: sadAppear 9s ease-in-out forwards;
+}
+
+@keyframes sadAppear {
+  0%, 33% {
+    opacity: 0;
+  }
+  35%, 100% {
+    opacity: 1;
+  }
+}
+
+/* Empty basket - visible at start */
+.pc-empty-basket {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 50px;
+  opacity: 1;
+  animation: emptyBasketHide 9s ease-in-out forwards;
+}
+
+.pc-basket-handles {
+  display: flex;
+  justify-content: space-between;
+  width: 60px;
+  margin: 0 auto 2px;
+}
+
+.pc-handle-left,
+.pc-handle-right {
+  width: 3px;
+  height: 15px;
+  background: #8B4513;
+  border-radius: 3px 3px 0 0;
+}
+
+.pc-basket-body {
+  width: 60px;
+  height: 45px;
+  background: linear-gradient(to bottom, #D2691E 0%, #A0522D 100%);
+  border-radius: 0 0 8px 8px;
+  position: relative;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.pc-basket-fold {
+  width: 100%;
+  height: 5px;
+  background: #8B4513;
+  border-radius: 2px;
+}
+
+@keyframes emptyBasketHide {
+  0%, 55% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+  58% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.8);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.8);
+  }
+}
+
+/* Full basket with products - appears after empty one hides */
+.pc-full-basket {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%) scale(0);
+  top: 50px;
+  opacity: 0;
+  animation: fullBasketAppear 9s ease-in-out forwards;
+}
+
+.pc-products-in-basket {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  padding: 5px;
+  justify-content: center;
+  align-items: center;
+}
+
+.pc-product-item {
+  font-size: 12px;
+  animation: productPop 0.3s ease-out backwards;
+}
+
+.pc-product-item:nth-child(1) { animation-delay: 6.2s; }
+.pc-product-item:nth-child(2) { animation-delay: 6.3s; }
+.pc-product-item:nth-child(3) { animation-delay: 6.4s; }
+.pc-product-item:nth-child(4) { animation-delay: 6.5s; }
+.pc-product-item:nth-child(5) { animation-delay: 6.6s; }
+
+@keyframes fullBasketAppear {
+  0%, 66% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0);
+  }
+  70% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.2);
+  }
+  75% {
+    transform: translateX(-50%) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+@keyframes productPop {
+  from {
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.3) rotate(10deg);
+  }
+  to {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+/* Tears - appear when sad */
+.pc-tear {
+  position: absolute;
+  opacity: 0;
+  font-size: 14px;
+  animation: tearFall 1.5s ease-in forwards;
+}
+
+.pc-tear-1 {
+  left: 75px;
+  top: 55px;
+  animation-delay: 3.3s;
+}
+
+.pc-tear-2 {
+  left: 90px;
+  top: 55px;
+  animation-delay: 3.6s;
+}
+
+@keyframes tearFall {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+}
+
+/* Think bubble - appears after crying */
+.pc-think-bubble {
+  position: absolute;
+  left: 130px;
+  top: 20px;
+  opacity: 0;
+  animation: thinkAppear 9s ease-in-out forwards;
+}
+
+.pc-bubble-dots {
+  display: flex;
+  gap: 3px;
+  margin-bottom: 2px;
+  margin-left: -10px;
+}
+
+.pc-dot {
+  width: 4px;
+  height: 4px;
+  background: #ccc;
+  border-radius: 50%;
+  animation: dotBounce 0.6s ease-in-out infinite;
+}
+
+.pc-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+@keyframes dotBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.pc-bubble-main {
+  font-size: 24px;
+}
+
+@keyframes thinkAppear {
+  0%, 44% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  48% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  52% {
+    transform: scale(1);
+  }
+  58%, 100% {
+    opacity: 0;
+    transform: scale(0);
+  }
+}
+
+/* Whoa reaction - appears when full basket shows */
+.pc-whoa-text {
+  position: absolute;
+  left: 130px;
+  top: 25px;
+  font-size: 20px;
+  font-weight: bold;
+  color: #FF6B6B;
+  opacity: 0;
+  animation: whoaAppear 9s ease-in-out forwards;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+}
+
+@keyframes whoaAppear {
+  0%, 77% {
+    opacity: 0;
+    transform: scale(0) rotate(-20deg);
+  }
+  80% {
+    opacity: 1;
+    transform: scale(1.3) rotate(5deg);
+  }
+  83% {
+    transform: scale(1) rotate(0deg);
+  }
+  88%, 100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* Button - Modern design with glow effect */
+.pc-new-arrivals-btn {
+  position: absolute;
+  right: 20px;
+  bottom: 40px;
+  background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 50%, #FFB347 100%);
+  color: white;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 30px;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  box-shadow: 
+    0 8px 25px rgba(255, 107, 107, 0.4),
+    inset 0 -2px 8px rgba(0, 0, 0, 0.1),
+    inset 0 2px 8px rgba(255, 255, 255, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+  transform: scale(0);
+  animation: buttonPop 9s ease-in-out forwards;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  position: relative;
+  overflow: hidden;
+}
+
+.pc-new-arrivals-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.pc-new-arrivals-btn:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.pc-new-arrivals-btn:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 
+    0 12px 35px rgba(255, 107, 107, 0.5),
+    inset 0 -2px 8px rgba(0, 0, 0, 0.1),
+    inset 0 2px 8px rgba(255, 255, 255, 0.3);
+}
+
+.pc-new-arrivals-btn:active {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 
+    0 5px 15px rgba(255, 107, 107, 0.4),
+    inset 0 -2px 8px rgba(0, 0, 0, 0.1),
+    inset 0 2px 8px rgba(255, 255, 255, 0.3);
+}
+
+.pc-btn-icon {
+  font-size: 18px;
+  animation: iconPulse 2s ease-in-out infinite;
+  display: inline-block;
+}
+
+@keyframes iconPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+@keyframes buttonPop {
+  0%, 88% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  92% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  95% {
+    transform: scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Tooltip - appears with button */
+.pc-tooltip {
+  position: absolute;
+  right: 10px;
+  bottom: 90px;
+  background: #333;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  animation: tooltipPop 9s ease-in-out forwards;
+}
+
+.pc-tooltip-arrow {
+  position: absolute;
+  bottom: -5px;
+  right: 50px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid #333;
+}
+
+@keyframes tooltipPop {
+  0%, 94% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  97% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scene container */
+.pc-shopping-scene {
+  width: 400px;
+  height: 200px;
+  position: relative;
+  overflow: visible;
+  margin: 0 auto;
+}
+
+/* ============================================
+   PROPER ALIGNMENT FIX - MATCHING DESIGN
+   ============================================ */
+
+/* Center the entire animation scene */
+.pc-no-products {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.pc-no-products-animation {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto 40px;
+}
+
+.pc-shopping-scene {
+  width: 100%;
+  height: 250px;
+  position: relative;
+  overflow: visible;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Button positioning - top center */
+.pc-new-arrivals-btn {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) scale(0);
+  bottom: auto;
+  right: auto;
+  opacity: 0;
+  animation: buttonPopTop 9s ease-in-out forwards;
+}
+
+@keyframes buttonPopTop {
+  0%, 88% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0);
+  }
+  92% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.1);
+  }
+  95% {
+    transform: translateX(-50%) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+.pc-new-arrivals-btn:hover {
+  transform: translateX(-50%) translateY(-3px) scale(1.05) !important;
+}
+
+.pc-new-arrivals-btn:active {
+  transform: translateX(-50%) translateY(-1px) scale(1.02) !important;
+}
+
+/* Person - centered in scene */
+.pc-person {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  animation: storyWalkCentered 9s ease-in-out forwards;
+}
+
+@keyframes storyWalkCentered {
+  0% {
+    left: -20%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  22% {
+    left: 35%; /* Person walks to left side, basket is on right */
+  }
+  100% {
+    left: 35%; /* Stays there */
+  }
+}
+
+/* Baskets - positioned to the right of person */
+.pc-empty-basket,
+.pc-full-basket {
+  position: absolute;
+  left: 60%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.pc-empty-basket {
+  animation: emptyBasketHideCentered 9s ease-in-out forwards;
+}
+
+@keyframes emptyBasketHideCentered {
+  0%, 55% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  58% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+}
+
+.pc-full-basket {
+  animation: fullBasketAppearCentered 9s ease-in-out forwards;
+}
+
+@keyframes fullBasketAppearCentered {
+  0%, 66% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0);
+  }
+  70% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+  75% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* Whoa text - above person's head */
+.pc-whoa-text {
+  position: absolute;
+  left: 30%;
+  top: 20%;
+  transform: translate(-50%, -50%);
+}
+
+/* Think bubble - above person's head on left */
+.pc-think-bubble {
+  position: absolute;
+  left: 28%;
+  top: 25%;
+  transform: translate(-50%, -50%);
+}
+
+/* Tears - from person's eyes */
+.pc-tear-1 {
+  left: 33%;
+  top: 47%;
+}
+
+.pc-tear-2 {
+  left: 37%;
+  top: 47%;
+}
+
+/* Tooltip - below button */
+.pc-tooltip {
+  position: absolute;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: auto;
+  right: auto;
+}
+
+.pc-tooltip-arrow {
+  bottom: auto;
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  right: auto;
+  border-top: none;
+  border-bottom: 5px solid #333;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+}
+
+/* Body and legs styling */
+.pc-body {
+  width: 50px;
+  height: 60px;
+  background: #5B9BD5;
+  border-radius: 10px;
+  margin: 0 auto;
+}
+
+/* Text below animation */
+.pc-no-products-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+  margin: 20px 0 10px;
+}
+
+.pc-no-products-text {
+  font-size: 16px;
+  color: #666;
+  margin: 0;
+  max-width: 500px;
+}
+
+/* ============================================
+   UPDATED ANIMATION LOGIC - NEW STORY
+   ============================================
+   0-1s: Empty basket visible (already there)
+   1-3s: Person walks in and approaches basket
+   3-4s: Person looks inside basket (head tilts)
+   4-5s: Sad face appears (sees empty basket)
+   5-6s: Tears fall (crying)
+   6-7s: Think bubble appears (thinking)
+   7-8s: Lightbulb idea appears! (got idea)
+   8-9s: Empty basket disappears
+   9-10s: Full basket appears with products
+   10-11s: Happy face appears
+   11-12s: Button and arrow appear
+   ============================================ */
+
+/* Empty basket - visible from start */
+.pc-empty-basket {
+  position: absolute;
+  left: 60%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 1;
+  animation: emptyBasketStory 12s ease-in-out forwards;
+}
+
+@keyframes emptyBasketStory {
+  0%, 66% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  70% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+}
+
+/* Person walks in from left */
+.pc-person {
+  position: absolute;
+  left: -20%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  animation: personWalksToBasket 12s ease-in-out forwards;
+}
+
+@keyframes personWalksToBasket {
+  0%, 8% {
+    left: -20%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  25% {
+    left: 35%; /* Arrives at basket */
+  }
+  100% {
+    left: 35%; /* Stays there */
+  }
+}
+
+/* Head looks down into basket */
+.pc-head {
+  animation: headLooksInBasket 12s ease-in-out forwards;
+}
+
+@keyframes headLooksInBasket {
+  0%, 25% {
+    transform: rotate(0deg);
+  }
+  30%, 40% {
+    transform: rotate(25deg); /* Looks down */
+  }
+  45%, 100% {
+    transform: rotate(0deg); /* Looks back up */
+  }
+}
+
+/* Sad mouth appears when seeing empty basket */
+.pc-sad-mouth {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%) rotate(180deg);
+  font-size: 14px;
+  color: #666;
+  opacity: 0;
+  animation: sadMouthAppear 12s ease-in-out forwards;
+}
+
+@keyframes sadMouthAppear {
+  0%, 33% {
+    opacity: 0;
+  }
+  35%, 83% {
+    opacity: 1; /* Sad until idea comes */
+  }
+  85%, 100% {
+    opacity: 0; /* Disappears when happy */
+  }
+}
+
+/* Happy mouth appears after idea */
+.pc-happy-mouth {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 14px;
+  color: #666;
+  opacity: 0;
+  animation: happyMouthAppear 12s ease-in-out forwards;
+}
+
+@keyframes happyMouthAppear {
+  0%, 83% {
+    opacity: 0;
+  }
+  85%, 100% {
+    opacity: 1; /* Happy after seeing full basket */
+  }
+}
+
+/* Tears fall when crying */
+.pc-tear {
+  position: absolute;
+  opacity: 0;
+  font-size: 14px;
+  animation: tearsFall 2s ease-in forwards;
+}
+
+.pc-tear-1 {
+  left: 33%;
+  top: 47%;
+  animation-delay: 5s;
+}
+
+.pc-tear-2 {
+  left: 37%;
+  top: 47%;
+  animation-delay: 5.3s;
+}
+
+@keyframes tearsFall {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+}
+
+/* Think bubble appears */
+.pc-think-bubble {
+  position: absolute;
+  left: 28%;
+  top: 25%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  animation: thinkBubbleAppear 12s ease-in-out forwards;
+}
+
+@keyframes thinkBubbleAppear {
+  0%, 50% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0);
+  }
+  52% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+  55% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  62% {
+    opacity: 1;
+  }
+  65% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Lightbulb idea appears */
+.pc-idea-bulb {
+  position: absolute;
+  left: 28%;
+  top: 20%;
+  font-size: 28px;
+  opacity: 0;
+  animation: ideaBulbAppear 12s ease-in-out forwards;
+}
+
+@keyframes ideaBulbAppear {
+  0%, 58% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0) rotate(0deg);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.5) rotate(20deg);
+  }
+  62% {
+    transform: translate(-50%, -50%) scale(1.3) rotate(-15deg);
+  }
+  64% {
+    transform: translate(-50%, -50%) scale(1.4) rotate(10deg);
+  }
+  66% {
+    transform: translate(-50%, -50%) scale(1.2) rotate(0deg);
+  }
+  68% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Full basket appears with products */
+.pc-full-basket {
+  position: absolute;
+  left: 60%;
+  top: 50%;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0);
+  animation: fullBasketMagicAppear 12s ease-in-out forwards;
+}
+
+@keyframes fullBasketMagicAppear {
+  0%, 75% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0) rotate(0deg);
+  }
+  78% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.3) rotate(10deg);
+  }
+  82% {
+    transform: translate(-50%, -50%) scale(0.95) rotate(-5deg);
+  }
+  85% {
+    transform: translate(-50%, -50%) scale(1) rotate(0deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) rotate(0deg);
+  }
+}
+
+/* Products pop in one by one */
+.pc-product-item {
+  font-size: 14px;
+  opacity: 0;
+  animation: productPopIn 0.3s ease-out forwards;
+}
+
+.pc-product-item:nth-child(1) { animation-delay: 9.2s; }
+.pc-product-item:nth-child(2) { animation-delay: 9.3s; }
+.pc-product-item:nth-child(3) { animation-delay: 9.4s; }
+.pc-product-item:nth-child(4) { animation-delay: 9.5s; }
+.pc-product-item:nth-child(5) { animation-delay: 9.6s; }
+
+@keyframes productPopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(-180deg);
+  }
+  50% {
+    transform: scale(1.3) rotate(20deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* Whoa reaction when seeing full basket */
+.pc-whoa-text {
+  position: absolute;
+  left: 30%;
+  top: 20%;
+  font-size: 22px;
+  font-weight: bold;
+  color: #FF6B6B;
+  opacity: 0;
+  animation: whoaReaction 12s ease-in-out forwards;
+}
+
+@keyframes whoaReaction {
+  0%, 83% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0);
+  }
+  85% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.4) rotate(10deg);
+  }
+  87% {
+    transform: translate(-50%, -50%) scale(1.1) rotate(-5deg);
+  }
+  89% {
+    transform: translate(-50%, -50%) scale(1) rotate(0deg);
+  }
+  95% {
+    opacity: 1;
+  }
+  98% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Button appears at the end */
+.pc-new-arrivals-btn {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) scale(0);
+  opacity: 0;
+  animation: buttonFinalAppear 12s ease-in-out forwards;
+}
+
+@keyframes buttonFinalAppear {
+  0%, 91% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0);
+  }
+  94% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.15);
+  }
+  97% {
+    transform: translateX(-50%) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+/* Tooltip appears with button */
+.pc-tooltip {
+  position: absolute;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  animation: tooltipFinalAppear 12s ease-in-out forwards;
+}
+
+@keyframes tooltipFinalAppear {
+  0%, 95% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  97% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Stop legs from walking after person arrives */
+.pc-leg-left,
+.pc-leg-right {
+  animation: legsWalkThenStop 12s ease-in-out forwards;
+}
+
+@keyframes legsWalkThenStop {
+  0%, 8% {
+    animation: none;
+  }
+  8%, 25% {
+    animation: legWalkStory 0.6s ease-in-out infinite;
+  }
+  25.1%, 100% {
+    transform: rotate(0deg);
+  }
+}
+
+/* ============================================
+   FINAL VERSION - WITH ARMS AND CLEAN ANIMATIONS
+   ============================================ */
+
+/* Body with arms */
+.pc-body {
+  width: 50px;
+  height: 60px;
+  background: #5B9BD5;
+  border-radius: 10px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* Arms container */
+.pc-arms {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+
+/* Arms styling */
+.pc-arm {
+  width: 6px;
+  height: 35px;
+  background: #FFB88C;
+  border-radius: 3px;
+  position: absolute;
+  top: 5px;
+  transform-origin: top center;
+}
+
+.pc-arm-left {
+  left: -8px;
+  animation: armSwingLeft 0.6s ease-in-out infinite;
+}
+
+.pc-arm-right {
+  right: -8px;
+  animation: armSwingRight 0.6s ease-in-out infinite;
+}
+
+/* Arms swing while walking */
+@keyframes armSwingLeft {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(-30deg); /* Swings backward */
+  }
+}
+
+@keyframes armSwingRight {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(30deg); /* Swings forward */
+  }
+}
+
+/* Stop arms after person arrives at basket */
+.pc-person {
+  position: absolute;
+  left: -20%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  animation: personWalksToBasketFinal 12s ease-in-out forwards;
+}
+
+@keyframes personWalksToBasketFinal {
+  0%, 8% {
+    left: -20%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  25% {
+    left: 35%; /* Arrives at basket - arms stop */
+  }
+  100% {
+    left: 35%;
+  }
+}
+
+/* Stop all movements when person stops walking */
+.pc-arm-left {
+  animation: armWalkThenStop 12s ease-in-out forwards;
+}
+
+.pc-arm-right {
+  animation: armWalkThenStopRight 12s ease-in-out forwards;
+}
+
+@keyframes armWalkThenStop {
+  0%, 8% {
+    transform: rotate(0deg);
+  }
+  8%, 25% {
+    animation: armSwingLeft 0.6s ease-in-out infinite;
+  }
+  25.1%, 100% {
+    transform: rotate(0deg);
+    animation: none;
+  }
+}
+
+@keyframes armWalkThenStopRight {
+  0%, 8% {
+    transform: rotate(0deg);
+  }
+  8%, 25% {
+    animation: armSwingRight 0.6s ease-in-out infinite;
+  }
+  25.1%, 100% {
+    transform: rotate(0deg);
+    animation: none;
+  }
+}
+
+/* Clean legs animation */
+.pc-leg {
+  width: 8px;
+  height: 40px;
+  background: #4A7FAD;
+  border-radius: 0 0 4px 4px;
+  position: absolute;
+  bottom: 0;
+  transform-origin: top center;
+}
+
+.pc-leg-left {
+  left: 16px;
+  animation: legWalkThenStopFinal 12s ease-in-out forwards;
+}
+
+.pc-leg-right {
+  right: 16px;
+  animation: legWalkThenStopFinalRight 12s ease-in-out forwards;
+}
+
+@keyframes legWalkThenStopFinal {
+  0%, 8% {
+    transform: rotate(0deg);
+  }
+  8.5% {
+    transform: rotate(-20deg);
+  }
+  9% {
+    transform: rotate(20deg);
+  }
+  9.5% {
+    transform: rotate(-20deg);
+  }
+  10% {
+    transform: rotate(20deg);
+  }
+  10.5% {
+    transform: rotate(-20deg);
+  }
+  11% {
+    transform: rotate(20deg);
+  }
+  11.5% {
+    transform: rotate(-20deg);
+  }
+  12% {
+    transform: rotate(20deg);
+  }
+  12.5% {
+    transform: rotate(-20deg);
+  }
+  13% {
+    transform: rotate(20deg);
+  }
+  13.5% {
+    transform: rotate(-20deg);
+  }
+  14% {
+    transform: rotate(20deg);
+  }
+  14.5% {
+    transform: rotate(-20deg);
+  }
+  15% {
+    transform: rotate(20deg);
+  }
+  15.5% {
+    transform: rotate(-20deg);
+  }
+  16% {
+    transform: rotate(20deg);
+  }
+  16.5% {
+    transform: rotate(-20deg);
+  }
+  17% {
+    transform: rotate(20deg);
+  }
+  17.5% {
+    transform: rotate(-20deg);
+  }
+  18% {
+    transform: rotate(20deg);
+  }
+  18.5% {
+    transform: rotate(-20deg);
+  }
+  19% {
+    transform: rotate(20deg);
+  }
+  19.5% {
+    transform: rotate(-20deg);
+  }
+  20% {
+    transform: rotate(20deg);
+  }
+  20.5% {
+    transform: rotate(-20deg);
+  }
+  21% {
+    transform: rotate(20deg);
+  }
+  21.5% {
+    transform: rotate(-20deg);
+  }
+  22% {
+    transform: rotate(20deg);
+  }
+  22.5% {
+    transform: rotate(-20deg);
+  }
+  23% {
+    transform: rotate(20deg);
+  }
+  23.5% {
+    transform: rotate(-20deg);
+  }
+  24% {
+    transform: rotate(20deg);
+  }
+  24.5% {
+    transform: rotate(-20deg);
+  }
+  25%, 100% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes legWalkThenStopFinalRight {
+  0%, 8% {
+    transform: rotate(0deg);
+  }
+  8.5% {
+    transform: rotate(20deg);
+  }
+  9% {
+    transform: rotate(-20deg);
+  }
+  9.5% {
+    transform: rotate(20deg);
+  }
+  10% {
+    transform: rotate(-20deg);
+  }
+  10.5% {
+    transform: rotate(20deg);
+  }
+  11% {
+    transform: rotate(-20deg);
+  }
+  11.5% {
+    transform: rotate(20deg);
+  }
+  12% {
+    transform: rotate(-20deg);
+  }
+  12.5% {
+    transform: rotate(20deg);
+  }
+  13% {
+    transform: rotate(-20deg);
+  }
+  13.5% {
+    transform: rotate(20deg);
+  }
+  14% {
+    transform: rotate(-20deg);
+  }
+  14.5% {
+    transform: rotate(20deg);
+  }
+  15% {
+    transform: rotate(-20deg);
+  }
+  15.5% {
+    transform: rotate(20deg);
+  }
+  16% {
+    transform: rotate(-20deg);
+  }
+  16.5% {
+    transform: rotate(20deg);
+  }
+  17% {
+    transform: rotate(-20deg);
+  }
+  17.5% {
+    transform: rotate(20deg);
+  }
+  18% {
+    transform: rotate(-20deg);
+  }
+  18.5% {
+    transform: rotate(20deg);
+  }
+  19% {
+    transform: rotate(-20deg);
+  }
+  19.5% {
+    transform: rotate(20deg);
+  }
+  20% {
+    transform: rotate(-20deg);
+  }
+  20.5% {
+    transform: rotate(20deg);
+  }
+  21% {
+    transform: rotate(-20deg);
+  }
+  21.5% {
+    transform: rotate(20deg);
+  }
+  22% {
+    transform: rotate(-20deg);
+  }
+  22.5% {
+    transform: rotate(20deg);
+  }
+  23% {
+    transform: rotate(-20deg);
+  }
+  23.5% {
+    transform: rotate(20deg);
+  }
+  24% {
+    transform: rotate(-20deg);
+  }
+  24.5% {
+    transform: rotate(20deg);
+  }
+  25%, 100% {
+    transform: rotate(0deg);
+  }
+}
