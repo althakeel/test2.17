@@ -21,7 +21,8 @@ export default function CheckoutLeft({
   formData,
   setFormData,
   handlePlaceOrder,
-  createOrder
+  createOrder,
+  isPlacingOrder = false
 }) {
   const [showForm, setShowForm] = useState(false);
   const [showSignInModal, setShowSignInModal] = useState(false);
@@ -73,14 +74,40 @@ export default function CheckoutLeft({
   };
 
   // -------------------------------
-  // Auto-open form if no shipping address
+  // Auto-open form if no shipping address (delayed to allow sign-in popup first)
   // -------------------------------
   useEffect(() => {
+    const hasShownSignInPopup = sessionStorage.getItem('checkoutSignInSuggestionShown');
     const hasAddress = formData?.shipping?.street?.trim() &&
                        formData?.shipping?.first_name?.trim() &&
                        formData?.shipping?.last_name?.trim();
-    if (!hasAddress) setShowForm(true);
+    
+    // Only auto-open if no sign-in popup was shown, or after a delay
+    if (!hasAddress) {
+      if (hasShownSignInPopup === 'true') {
+        // If sign-in popup was shown before, don't auto-open (wait for event trigger)
+        // Do nothing - the event listener will handle it
+      } else {
+        // No sign-in popup in this session, open form immediately
+        setShowForm(true);
+      }
+    }
   }, []);
+
+  // -------------------------------
+  // Listen for external trigger to open address form
+  // -------------------------------
+  useEffect(() => {
+    const handleOpenAddressForm = () => {
+      const hasAddress = formData?.shipping?.street?.trim();
+      if (!hasAddress) {
+        setShowForm(true);
+      }
+    };
+
+    window.addEventListener('openAddressForm', handleOpenAddressForm);
+    return () => window.removeEventListener('openAddressForm', handleOpenAddressForm);
+  }, [formData]);
 
   // -------------------------------
   // Shipping method handling
@@ -123,18 +150,30 @@ export default function CheckoutLeft({
     setError(null);
     setSaveSuccess(false);
 
-    const formatAddress = (addr) => ({
-      first_name: addr.first_name || '',
-      last_name: addr.last_name || '',
-      email: addr.email || '',
-      address_1: addr.street || '',
-      address_2: addr.apartment || '',
-      city: addr.city || '',
-      state: addr.state || '',
-      postcode: addr.postal_code || '',
-      country: addr.country || '',
-      phone: addr.phone_number || ''
-    });
+    const formatAddress = (addr) => {
+      // Clean phone number - extract only 7 digits
+      let cleanPhone = (addr.phone_number || '').toString().replace(/[^0-9]/g, '');
+      if (cleanPhone.length > 7) {
+        cleanPhone = cleanPhone.slice(-7);
+      }
+      
+      // Format full phone: +971 + prefix + 7digits
+      const prefix = addr.phone_prefix || '50';
+      const fullPhone = cleanPhone.length === 7 ? `+971${prefix}${cleanPhone}` : '';
+
+      return {
+        first_name: addr.first_name || '',
+        last_name: addr.last_name || '',
+        email: addr.email || '',
+        address_1: addr.street || '',
+        address_2: addr.apartment || '',
+        city: addr.city || '',
+        state: addr.state || '',
+        postcode: addr.postal_code || '',
+        country: addr.country || '',
+        phone: fullPhone
+      };
+    };
 
     const payload = {
       shipping: formatAddress(formData.shipping),
@@ -182,7 +221,9 @@ export default function CheckoutLeft({
                 <div className="saved-address-grid">
                   <div className="saved-address-label">Name</div>
                   <div className="saved-address-colon">:</div>
-                  <div className="saved-address-value">{formData.shipping.first_name} {formData.shipping.last_name}</div>
+                  <div className="saved-address-value">
+                    {formData.shipping.full_name || `${formData.shipping.first_name || ''} ${formData.shipping.last_name || ''}`.trim()}
+                  </div>
 
                   <div className="saved-address-label">Address</div>
                   <div className="saved-address-colon">:</div>
@@ -196,7 +237,7 @@ export default function CheckoutLeft({
 
                   <div className="saved-address-label">Phone</div>
                   <div className="saved-address-colon">:</div>
-                  <div className="saved-address-value">+{formData.shipping.phone_number}</div>
+                  <div className="saved-address-value">+971{formData.shipping.phone_prefix}{formData.shipping.phone_number}</div>
 
                   <div className="saved-address-label">State</div>
                   <div className="saved-address-colon">:</div>
@@ -236,6 +277,7 @@ export default function CheckoutLeft({
         subtotal={subtotal}
         cartItems={cartItems || []}
         orderId={orderId}
+        isPlacingOrder={isPlacingOrder}
       />
 
       {/* Sidebar Help */}

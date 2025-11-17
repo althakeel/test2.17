@@ -118,7 +118,7 @@ const OrderDetails = ({ order }) => {
     Speed up again
   </button>
 
-  <button
+  {/* <button
     type="button"
     style={styles.actionBtn}
     onClick={() => alert('Buy this again clicked!')}
@@ -126,7 +126,7 @@ const OrderDetails = ({ order }) => {
     onMouseLeave={e => e.currentTarget.style.backgroundColor = '#fff'}
   >
     Buy this again
-  </button>
+  </button> */}
 
   <button
     type="button"

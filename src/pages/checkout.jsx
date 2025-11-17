@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import CheckoutLeft from '../components/CheckoutLeft';
 import CheckoutRight from '../components/CheckoutRight';
 import AutoFetchLocation from '../components/AutoFetchLocation';
-// import SignInModal from '../components/sub/SignInModal';
+import SignInModal from '../components/sub/SignInModal';
 import '../assets/styles/checkout.css';
 
 const API_BASE = 'https://db.store1920.com/wp-json/wc/v3';
@@ -62,6 +62,7 @@ export default function CheckoutPage() {
     shipping: {
       first_name: '',
       last_name: '',
+      full_name: '',
       email: '',
       street: '',
       apartment: '',
@@ -76,6 +77,7 @@ export default function CheckoutPage() {
     billing: {
       first_name: '',
       last_name: '',
+      full_name: '',
       email: '',
       street: '',
       apartment: '',
@@ -96,7 +98,9 @@ export default function CheckoutPage() {
 
   const [orderId, setOrderId] = useState(null);
   const [loading, setLoading] = useState(true);
-  // const [showSignInModal, setShowSignInModal] = useState(false);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [showSignInModal, setShowSignInModal] = useState(!user); // Show immediately if not logged in
+  const [shouldCheckAddress, setShouldCheckAddress] = useState(false);
   const [alert, setAlert] = useState({ message: '', type: 'info' });
   const [error, setError] = useState('');
 
@@ -171,6 +175,7 @@ useEffect(() => {
           billing: {
             first_name: customer.billing.first_name || '',
             last_name: customer.billing.last_name || '',
+            full_name: `${customer.billing.first_name || ''} ${customer.billing.last_name || ''}`.trim(),
             email: customer.billing.email || '',
             street: customer.billing.address_1 || '',
             apartment: customer.billing.address_2 || '',
@@ -185,6 +190,7 @@ useEffect(() => {
           shipping: {
             first_name: customer.shipping.first_name || '',
             last_name: customer.shipping.last_name || '',
+            full_name: `${customer.shipping.first_name || ''} ${customer.shipping.last_name || ''}`.trim(),
             email: customer.email || '',
             street: customer.shipping.address_1 || '',
             apartment: customer.shipping.address_2 || '',
@@ -262,6 +268,17 @@ useEffect(() => {
     fetchData();
   }, []);
 
+  // Mandatory sign-in for checkout - no guest checkout allowed
+  useEffect(() => {
+    if (!user) {
+      // Show sign-in modal immediately if user is not logged in
+      setShowSignInModal(true);
+    } else {
+      // User is logged in, hide modal
+      setShowSignInModal(false);
+    }
+  }, [user]);
+
   // Handle payment redirects
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -298,9 +315,10 @@ useEffect(() => {
 
     // Compose full phone number for backend
     const getFullPhone = (data) => {
-      // Always use +971 as country code, then prefix, then number
       const prefix = data.phone_prefix || '50';
-      const number = data.phone_number || '';
+      let number = (data.phone_number || '').toString().replace(/[^0-9]/g, '');
+      
+      // Always use +971 as country code, then prefix, then number
       return `+971${prefix}${number}`;
     };
     const line_items = cartItems.map(i => ({ product_id: i.id, quantity: i.quantity }));
@@ -402,6 +420,14 @@ meta_data: [
 
   const handlePlaceOrder = async () => {
     setError('');
+    
+    // Check if user is logged in (mandatory for checkout)
+    if (!user) {
+      setShowSignInModal(true);
+      showAlert('Please sign in to place your order', 'warning');
+      return;
+    }
+    
     try {
       const order = orderId ? await fetchWithAuth(`orders/${orderId}`) : await createOrder();
       setOrderId(order.id);
@@ -503,6 +529,7 @@ return (
         setFormData={setFormData}
         handlePlaceOrder={handlePlaceOrder}
         createOrder={createOrder}
+        isPlacingOrder={isPlacingOrder}
       />
       <CheckoutRight
         cartItems={cartItems}
@@ -512,10 +539,33 @@ return (
         clearCart={() => setCartItems([])}
         handlePlaceOrder={handlePlaceOrder}
         subtotal={subtotal}
+        setIsPlacingOrder={setIsPlacingOrder}
       />
     </div>
 
     {alert.message && <div className={`checkout-alert ${alert.type}`}>{alert.message}</div>}
+
+    {showSignInModal && !user && (
+      <SignInModal
+        isOpen={showSignInModal}
+        onClose={() => {
+          // Prevent closing if user is not logged in
+          if (user) {
+            setShowSignInModal(false);
+          } else {
+            // Show alert that sign-in is required
+            showAlert('Please sign in to continue with checkout', 'warning');
+          }
+        }}
+        onLogin={(userInfo) => {
+          setShowSignInModal(false);
+          setShouldCheckAddress(false);
+          showAlert('Welcome! Please fill in your delivery address below.', 'success');
+          // Page will auto-reload addresses from context
+        }}
+        autoTriggerGoogle={true}
+      />
+    )}
 
     {error && <div className="error-message">{error}</div>}
   </>

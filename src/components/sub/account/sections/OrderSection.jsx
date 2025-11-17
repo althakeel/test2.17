@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import '../../../../assets/styles/myaccount/OrderSection.css';
 import AllOrders from './sub/Orders';
@@ -18,11 +19,9 @@ const API_AUTH = {
 const CART_API_URL = 'https://db.store1920.com/wp-json/cocart/v2/cart/add-item';
 
 const OrderSection = ({ userId }) => {
-  const [orders, setOrders] = useState([]);
   const [activeStatus, setActiveStatus] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [searchResults, setSearchResults] = useState(null);
   const [cancellingOrderId, setCancellingOrderId] = useState(null);
   const navigate = useNavigate();
 
@@ -34,21 +33,21 @@ const OrderSection = ({ userId }) => {
     { label: 'Returns', value: 'refunded' },
   ];
 
-  const fetchOrders = async () => {
-    if (!userId) {
-      setError('User not logged in.');
-      setOrders([]);
-      setLoading(false);
-      return;
-    }
+  // Fetch orders with React Query (with caching)
+  const { data: orders = [], isLoading: loading, error, refetch } = useQuery({
+    queryKey: ['orders', userId, activeStatus],
+    queryFn: async () => {
+      if (!userId) throw new Error('User not logged in');
 
-    setLoading(true);
-    setError(null);
+      const params = { 
+        customer: userId,
+        per_page: 10, // Reduced to 10 for much faster loading
+        orderby: 'date',
+        order: 'desc',
+        // Only fetch essential fields to reduce response size
+        _fields: 'id,number,status,date_created,total,currency,line_items,billing,shipping,customer_id'
+      };
 
-    try {
-      const params = { customer: userId };
-
-      // WooCommerce API doesn't support shipped filter directly
       if (activeStatus && activeStatus !== 'shipped') {
         params.status = activeStatus;
       }
@@ -56,60 +55,65 @@ const OrderSection = ({ userId }) => {
       const response = await axios.get(API_BASE_URL, {
         auth: API_AUTH,
         params,
+        timeout: 20000, // Increased to 20 seconds
       });
 
       let fetchedOrders = response.data || [];
 
-      // Client-side filtering for shipped
       if (activeStatus === 'shipped') {
         fetchedOrders = fetchedOrders.filter(order => order.status === 'shipped');
       }
 
-      setOrders(fetchedOrders);
-    } catch (err) {
-      const message = err.response?.data?.message || err.message || 'Unknown error';
-      setError(`Failed to load orders: ${message}`);
-      setOrders([]);
-    } finally {
-      setLoading(false);
+      return fetchedOrders;
+    },
+    enabled: !!userId,
+    staleTime: 60000, // Cache for 60 seconds (increased)
+    cacheTime: 300000, // Keep in cache for 5 minutes
+    retry: 1, // Only retry once
+    retryDelay: 2000,
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    refetchOnReconnect: false, // Don't refetch on reconnect
+    onError: (err) => {
+      console.error('Orders fetch error:', err.message);
     }
-  };
-
-  useEffect(() => {
-    fetchOrders();
-  }, [activeStatus, userId]);
+  });
 
   const handleSearch = async () => {
     const trimmed = searchTerm.trim();
     if (!trimmed) return;
 
-    setLoading(true);
-    setError(null);
-
     try {
       const orderId = trimmed.replace(/^PO-/, '');
       const response = await axios.get(`${API_BASE_URL}/${orderId}`, {
         auth: API_AUTH,
+        timeout: 5000,
       });
 
       if (response.data.customer_id !== userId) {
         alert('Order not found or access denied.');
-        setOrders([]);
+        setSearchResults([]);
       } else {
-        setOrders([response.data]);
+        setSearchResults([response.data]);
       }
     } catch (err) {
       const message = err.response?.data?.message || err.message;
-      setError(`Search failed: ${message}`);
-      setOrders([]);
-    } finally {
-      setLoading(false);
+      alert(`Search failed: ${message}`);
+      setSearchResults([]);
     }
   };
 
+  const handleResetSearch = () => {
+    setSearchTerm('');
+    setActiveStatus('');
+    setSearchResults(null);
+  };
+
+  // Use search results if available, otherwise use React Query data
+  const displayOrders = searchResults !== null ? searchResults : orders;
+  const displayLoading = searchResults === null && loading;
+  const displayError = searchResults === null && error;
 
   const handleViewOrderDetails = (order) => {
-    // navigate to a detailed order page, or open a modal
     navigate(`/order/${order.id}`);
   };
 
@@ -125,20 +129,13 @@ const OrderSection = ({ userId }) => {
       );
 
       alert(`Order #${orderId} has been cancelled.`);
-      setOrders(prev =>
-        prev.map(order => (order.id === orderId ? { ...order, status: 'cancelled' } : order))
-      );
+      refetch(); // Refresh orders after cancellation
     } catch (err) {
       alert('Failed to cancel the order. Please try again.');
       console.error(err);
     } finally {
       setCancellingOrderId(null);
     }
-  };
-
-  const handleResetSearch = () => {
-    setSearchTerm('');
-    setActiveStatus('');
   };
 
   const slugify = text =>
@@ -170,7 +167,7 @@ const OrderSection = ({ userId }) => {
       case 'processing':
         return (
           <ProcessingOrders
-            orders={orders}
+            orders={displayOrders}
             cancellingOrderId={cancellingOrderId}
             cancelOrder={cancelOrder}
             handleProductClick={handleProductClick}
@@ -182,20 +179,20 @@ const OrderSection = ({ userId }) => {
       case 'shipped':
         return (
           <ShippedOrder
-            orders={orders}
+            orders={displayOrders}
             cancellingOrderId={cancellingOrderId}
             cancelOrder={cancelOrder}
             handleProductClick={handleProductClick}
             slugify={slugify}
             isCancelable={isCancelable}
-            onOrdersUpdated={fetchOrders}
+            onOrdersUpdated={refetch}
           />
         );
 
       case 'completed':
         return (
           <OrderDelivered
-          orders={orders}
+          orders={displayOrders}
           handleProductClick={handleProductClick}
           slugify={slugify}
           viewOrderDetails={handleViewOrderDetails}
@@ -205,10 +202,10 @@ const OrderSection = ({ userId }) => {
       case 'refunded':
         return (
           <OrderReturns
-          orders={orders}
+          orders={displayOrders}
           handleProductClick={handleProductClick}
           slugify={slugify}
-          isCancelable={isCancelable} // <-- make sure this is a function
+          isCancelable={isCancelable}
           cancelOrder={cancelOrder}
         />
         );
@@ -216,13 +213,13 @@ const OrderSection = ({ userId }) => {
       default:
         return (
           <AllOrders
-            orders={orders}
+            orders={displayOrders}
             cancellingOrderId={cancellingOrderId}
             cancelOrder={cancelOrder}
             handleProductClick={handleProductClick}
             slugify={slugify}
             isCancelable={isCancelable}
-            onOrdersUpdated={fetchOrders}
+            onOrdersUpdated={refetch}
           />
         );
     }
@@ -273,10 +270,47 @@ const OrderSection = ({ userId }) => {
         ))}
       </div>
 
-      {loading && <p>Loading orders...</p>}
-      {error && <p className="error">{error}</p>}
-      {!loading && !error && orders.length === 0 && <p>No orders found.</p>}
-      {!loading && !error && orders.length > 0 && renderOrdersByStatus()}
+      {displayLoading && (
+        <div className="orders-loading">
+          <p>Loading your orders...</p>
+          <p style={{ fontSize: '14px', color: '#666', marginTop: '10px' }}>
+            This may take a few seconds
+          </p>
+        </div>
+      )}
+      {displayError && (
+        <div className="error-message-box" style={{
+          padding: '20px',
+          backgroundColor: '#fee',
+          border: '1px solid #fcc',
+          borderRadius: '8px',
+          margin: '20px 0'
+        }}>
+          <p className="error" style={{ margin: '0 0 10px 0', fontWeight: 'bold' }}>
+            Failed to load orders
+          </p>
+          <p style={{ margin: '0 0 10px 0', fontSize: '14px' }}>
+            {displayError.message?.includes('timeout') 
+              ? 'The server is taking too long to respond. Please try again.'
+              : displayError.message || 'An error occurred while fetching orders'}
+          </p>
+          <button 
+            onClick={() => refetch()} 
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
+      {!displayLoading && !displayError && displayOrders.length === 0 && <p>No orders found.</p>}
+      {!displayLoading && !displayError && displayOrders.length > 0 && renderOrdersByStatus()}
     </div>
   );
 };

@@ -40,7 +40,7 @@ const parseErrorMsg = (rawMsg) => {
 };
 
 // ===================== Main Component =====================
-const SignInModal = ({ isOpen, onClose, onLogin }) => {
+const SignInModal = ({ isOpen, onClose, onLogin, autoTriggerGoogle = false }) => {
   const { login } = useAuth();
   const googleButtonRef = useRef(null); // AUTO GOOGLE LOGIN
 
@@ -60,8 +60,9 @@ const SignInModal = ({ isOpen, onClose, onLogin }) => {
   const WP_API = "https://db.store1920.com/wp-json";
 
   // ===================== AUTO GOOGLE POPUP =====================
+  // Only auto-trigger if explicitly requested (not for checkout suggestion popup)
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && autoTriggerGoogle) {
       // Slight delay so modal fully renders
       setTimeout(() => {
         if (googleButtonRef.current) {
@@ -69,7 +70,7 @@ const SignInModal = ({ isOpen, onClose, onLogin }) => {
         }
       }, 700);
     }
-  }, [isOpen]);
+  }, [isOpen, autoTriggerGoogle]);
 
   // ===================== Handlers =====================
   const handleChange = (e) => {
@@ -202,13 +203,36 @@ const SignInModal = ({ isOpen, onClose, onLogin }) => {
   // ===================== Render =====================
   return (
     <>
-      <div className="signin-modal-overlay" onClick={onClose} />
+      <div 
+        className="signin-modal-overlay" 
+        onClick={autoTriggerGoogle ? undefined : onClose}
+        style={{ cursor: autoTriggerGoogle ? 'default' : 'pointer' }}
+      />
       <div className="signin-modal-container" role="dialog" aria-modal="true">
-        <button className="signin-modal-close" onClick={onClose} aria-label="Close modal">
-          ✕
-        </button>
+        {!autoTriggerGoogle && (
+          <button className="signin-modal-close" onClick={onClose} aria-label="Close modal">
+            ✕
+          </button>
+        )}
 
         <div className="signin-modal-header">
+          <div style={{ 
+            background: autoTriggerGoogle ? '#FFE5E5' : '#FFF3E0', 
+            padding: '12px', 
+            borderRadius: '8px', 
+            marginBottom: '12px',
+            textAlign: 'center',
+            fontSize: '14px',
+            color: autoTriggerGoogle ? '#C62828' : '#E65100',
+            fontWeight: autoTriggerGoogle ? '600' : 'normal'
+          }}>
+            {autoTriggerGoogle ? (
+              <>🔐 <strong>Sign in required to proceed with checkout</strong></>
+            ) : (
+              <>💡 <strong>Sign in to save your address</strong> or continue as guest</>
+            )}
+          </div>
+          
           <h2 className="signin-modal-title">Sign in / Register</h2>
           <div className="signin-security">🔒 All data will be encrypted</div>
 
@@ -312,9 +336,9 @@ const SignInModal = ({ isOpen, onClose, onLogin }) => {
           {/* Auto-click target */}
           <GoogleSignInButton
             ref={googleButtonRef}
+            onClose={onClose}
             onLogin={(userInfo) => {
               onLogin?.(userInfo);
-              onClose();
             }}
           />
 

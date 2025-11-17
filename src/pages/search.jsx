@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PlaceHolderImage from '../assets/images/common/Placeholder.png';
 import { searchProducts, getProductById } from "../api/woocommerce";
+import staticProducts from "../data/staticProducts";
 
 const useQuery = () => new URLSearchParams(useLocation().search);
 
@@ -18,14 +19,33 @@ const Search = () => {
     const fetchResults = async () => {
       setLoading(true);
       try {
-        let data;
+        let wooData = [];
+        
+        // Search WooCommerce products
         if (!isNaN(searchTerm)) {
           const product = await getProductById(searchTerm);
-          data = product ? [product] : [];
+          wooData = product ? [product] : [];
         } else {
-          data = await searchProducts(searchTerm);
+          wooData = await searchProducts(searchTerm);
         }
-        setResults(data || []);
+        
+        // Search static products
+        const staticData = staticProducts.filter(product => 
+          product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          product.shortdesc?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          product.slug.toLowerCase().includes(searchTerm.toLowerCase())
+        ).map(product => ({
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          images: [{ src: product.image }],
+          price_html: `<span class="amount">AED ${product.price}</span>`,
+          isStatic: true // Flag to identify static products
+        }));
+        
+        // Combine results (static products first)
+        setResults([...staticData, ...(wooData || [])]);
       } catch (err) {
         console.error(err);
         setResults([]);

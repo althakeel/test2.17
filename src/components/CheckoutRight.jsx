@@ -1,5 +1,6 @@
 // src/components/checkout/CheckoutRight.jsx
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import '../assets/styles/checkout/CheckoutRight.css';
 import TrustSection from './checkout/TrustSection';
 import CouponDiscount from './sub/account/CouponDiscount';
@@ -68,12 +69,16 @@ const parsePrice = (raw) => {
 // -----------------------------
 // CheckoutRight Component
 // -----------------------------
-export default function CheckoutRight({ cartItems, formData, createOrder, clearCart, orderId }) {
+export default function CheckoutRight({ cartItems, formData, createOrder, clearCart, orderId, setIsPlacingOrder }) {
+  const { user } = useAuth();
   const [alert, setAlert] = useState({ message: '', type: 'info' });
   const [hoverMessage, setHoverMessage] = useState('');
-  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [discount, setDiscount] = useState(0);
   const [coinDiscount, setCoinDiscount] = useState(0);
+
+  // Use parent's isPlacingOrder state if provided, otherwise use local state
+  const [localIsPlacingOrder, setLocalIsPlacingOrder] = useState(false);
+  const isPlacingOrder = setIsPlacingOrder ? localIsPlacingOrder : localIsPlacingOrder;
 
   const showAlert = (message, type = 'info') => setAlert({ message, type });
 
@@ -99,7 +104,7 @@ export default function CheckoutRight({ cartItems, formData, createOrder, clearC
   ];
   const shippingOrBilling = formData.shipping || formData.billing || {};
   const isAddressComplete = requiredFields.every((f) => shippingOrBilling[f]?.trim());
-  const canPlaceOrder = isAddressComplete && hasCartItems;
+  const canPlaceOrder = user && isAddressComplete && hasCartItems;
 
   // Capture order items
   const captureOrderItems = async (orderId, cartItems, customer) => {
@@ -160,10 +165,19 @@ export default function CheckoutRight({ cartItems, formData, createOrder, clearC
   // Place Order
   // -----------------------------
   const handlePlaceOrder = async () => {
+    // Check if user is logged in (mandatory for checkout)
+    if (!user) {
+      showAlert('Please sign in to place your order', 'error');
+      return;
+    }
+    
     if (!hasCartItems) return showAlert('Your cart is empty.', 'error');
     if (!isAddressComplete) return showAlert('Please fill all required address fields.', 'error');
     if (!formData.paymentMethod) return showAlert('Select a payment method', 'error');
-    setIsPlacingOrder(true);
+    
+    // Update both local and parent state
+    setLocalIsPlacingOrder(true);
+    if (setIsPlacingOrder) setIsPlacingOrder(true);
 
     try {
       const id = orderId || (await createOrder());
@@ -311,7 +325,8 @@ export default function CheckoutRight({ cartItems, formData, createOrder, clearC
       console.error('❌ ORDER ERROR:', err);
       showAlert(err.message || 'Failed to place order.', 'error');
     } finally {
-      setIsPlacingOrder(false);
+      setLocalIsPlacingOrder(false);
+      if (setIsPlacingOrder) setIsPlacingOrder(false);
     }
   };
 

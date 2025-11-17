@@ -27,10 +27,10 @@ import Product6 from '../../../assets/images/staticproducts/Peeler/1.webp'
 const PAGE_SIZE = 10;
 const INITIAL_VISIBLE = 24;
 const QUICK_LOAD_COUNT = 10; // Load 10 products quickly first
-const PRODUCT_FETCH_LIMIT = 24;
+const PRODUCT_FETCH_LIMIT = 20; // Reduced from 24
 const RECOMMENDED_CATEGORY_LIMIT = 8;
 const CATEGORY_PAGE_LIMIT = 4;
-const MAX_PRODUCTS = 580;
+const MAX_PRODUCTS = 100; // Reduced from 580 for performance
 
 
 // Utility to decode HTML entities
@@ -216,6 +216,8 @@ const apiProductCache = {};
 const clickedProductIds = new Set();
 // Track which categories are currently loading to prevent duplicate fetches
 const loadingCategories = new Set();
+// AbortController to cancel ongoing fetches
+let currentFetchController = null;
 
 const ProductCategory = () => {
   // Static category list (name, id)
@@ -296,6 +298,19 @@ const [categoryHasMore, setCategoryHasMore] = useState(true);
   const fetchProducts = useCallback(async (categoryId) => {
     console.log('🔍 Fetching products for category ID:', categoryId);
     
+    // Cancel previous fetch if still running
+    if (currentFetchController) {
+      try {
+        currentFetchController.abort();
+        console.log('🛑 Cancelled previous fetch');
+      } catch (e) {
+        console.log('⚠️ Could not abort previous fetch:', e);
+      }
+    }
+    
+    // Create new abort controller
+    currentFetchController = new AbortController();
+    
     // Prevent duplicate loading for same category
     if (loadingCategories.has(categoryId)) {
       console.log('⏳ Already loading this category, skipping...');
@@ -336,6 +351,12 @@ const [categoryHasMore, setCategoryHasMore] = useState(true);
       console.log(`⚡ Quick loading first ${QUICK_LOAD_COUNT} products...`);
       
       const quickRes = await fetch(quickUrl);
+      
+      // Check if request was aborted
+      if (!quickRes.ok) {
+        throw new Error(`HTTP error! status: ${quickRes.status}`);
+      }
+      
       const quickData = await quickRes.json();
       
       if (Array.isArray(quickData) && quickData.length > 0) {
@@ -361,9 +382,10 @@ const [categoryHasMore, setCategoryHasMore] = useState(true);
             try {
               let page = 2; // Start from page 2
               let currentProducts = [...validQuickData];
+              const MAX_PAGES = 3; // Only fetch 2 more pages (total 3 pages = ~50 products)
               
               // Fetch pages and update UI every batch for progressive loading
-              while (true) {
+              while (page <= MAX_PAGES) {
                 const url = `${API_BASE}/products?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}&per_page=${PRODUCT_FETCH_LIMIT}&page=${page}&category=${categoryId}&_fields=id,name,price,regular_price,sale_price,images,categories,slug`;
                 console.log(`📡 Background fetching page ${page}...`);
                 
@@ -443,6 +465,13 @@ const [categoryHasMore, setCategoryHasMore] = useState(true);
       }
     } catch (err) {
       console.error('❌ Error fetching products:', err);
+      
+      // Don't show error if it was just an aborted request
+      if (err.name === 'AbortError') {
+        console.log('🛑 Fetch aborted, likely switching categories');
+        return;
+      }
+      
       setAllProducts([]);
       setLoadingProducts(false);
       setShowingStaticOnly(false);

@@ -37,7 +37,7 @@ try {
   staticProducts = [];
 }
 
-const PaymentMethods = ({ selectedMethod, onMethodSelect, subtotal, cartItems = [] }) => {
+const PaymentMethods = ({ selectedMethod, onMethodSelect, subtotal, cartItems = [], isPlacingOrder = false }) => {
   const [showCodPopup, setShowCodPopup] = React.useState(false);
 
   // Get all static product IDs from staticProducts.js with error handling
@@ -187,6 +187,7 @@ const PaymentMethods = ({ selectedMethod, onMethodSelect, subtotal, cartItems = 
             name="payment-method"
             checked={selectedMethod === 'card'}
             onChange={() => onMethodSelect('card', 'Credit/Debit Card', CardIcon)}
+            disabled={isPlacingOrder}
           />
           <label htmlFor="card" className="payment-method-label">
             <div className="payment-method-content">
@@ -214,6 +215,7 @@ const PaymentMethods = ({ selectedMethod, onMethodSelect, subtotal, cartItems = 
             name="payment-method"
             checked={selectedMethod === 'tabby'}
             onChange={() => onMethodSelect('tabby', 'Tabby', TabbyIcon)}
+            disabled={isPlacingOrder}
           />
           <label htmlFor="tabby" className="payment-method-label">
             <div className="payment-method-content">
@@ -261,6 +263,7 @@ const PaymentMethods = ({ selectedMethod, onMethodSelect, subtotal, cartItems = 
             name="payment-method"
             checked={selectedMethod === 'tamara'}
             onChange={() => onMethodSelect('tamara', 'Tamara', TamaraIcon)}
+            disabled={isPlacingOrder}
           />
           <label htmlFor="tamara" className="payment-method-label">
             <div className="payment-method-content">
@@ -309,6 +312,7 @@ const PaymentMethods = ({ selectedMethod, onMethodSelect, subtotal, cartItems = 
               name="payment-method"
               checked={selectedMethod === 'cod'}
               onChange={() => onMethodSelect('cod', 'Cash on Delivery', CashIcon)}
+              disabled={isPlacingOrder}
             />
             <label htmlFor="cod" className="payment-method-label">
               <img src={CashIcon} alt="Cash on Delivery" className="payment-icon" />

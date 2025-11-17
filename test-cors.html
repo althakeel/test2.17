@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CORS Test - Google Login Endpoint</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .test-result { padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+        pre { background: #f4f4f4; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 CORS Test - Google Login Endpoint</h1>
+    <p>This will test if the WordPress Google Login endpoint is accessible from localhost:3000</p>
+    
+    <button onclick="testEndpoint()">Test Endpoint</button>
+    <button onclick="testCORS()">Test CORS Headers</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const ENDPOINT = 'https://db.store1920.com/wp-json/custom/v1/google-login';
+        
+        async function testEndpoint() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<div class="test-result info">Testing endpoint...</div>';
+            
+            try {
+                const testData = {
+                    email: 'test@example.com',
+                    name: 'Test User',
+                    firebase_uid: 'test_uid_123',
+                    photo_url: 'https://example.com/photo.jpg'
+                };
+                
+                console.log('Sending test data:', testData);
+                
+                const response = await fetch(ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', [...response.headers.entries()]);
+                
+                const data = await response.json();
+                console.log('Response data:', data);
+                
+                results.innerHTML = `
+                    <div class="test-result success">
+                        <h3>✅ Success!</h3>
+                        <p><strong>Status:</strong> ${response.status}</p>
+                        <p><strong>Response:</strong></p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Test failed:', error);
+                results.innerHTML = `
+                    <div class="test-result error">
+                        <h3>❌ Failed!</h3>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p><strong>Type:</strong> ${error.name}</p>
+                        ${error.message.includes('CORS') || error.message.includes('Network') ? 
+                            '<p><strong>Likely Cause:</strong> CORS headers not configured on WordPress</p>' : ''}
+                    </div>
+                `;
+            }
+        }
+        
+        async function testCORS() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<div class="test-result info">Testing CORS headers...</div>';
+            
+            try {
+                const response = await fetch(ENDPOINT, {
+                    method: 'OPTIONS',
+                });
+                
+                const headers = {};
+                response.headers.forEach((value, key) => {
+                    headers[key] = value;
+                });
+                
+                console.log('CORS headers:', headers);
+                
+                const hasCORS = headers['access-control-allow-origin'] || false;
+                const allowedMethods = headers['access-control-allow-methods'] || 'None';
+                const allowedHeaders = headers['access-control-allow-headers'] || 'None';
+                
+                if (hasCORS) {
+                    results.innerHTML = `
+                        <div class="test-result success">
+                            <h3>✅ CORS is Enabled!</h3>
+                            <p><strong>Allow-Origin:</strong> ${headers['access-control-allow-origin']}</p>
+                            <p><strong>Allow-Methods:</strong> ${allowedMethods}</p>
+                            <p><strong>Allow-Headers:</strong> ${allowedHeaders}</p>
+                        </div>
+                    `;
+                } else {
+                    results.innerHTML = `
+                        <div class="test-result error">
+                            <h3>❌ CORS Not Configured!</h3>
+                            <p>The WordPress endpoint is not sending CORS headers.</p>
+                            <p><strong>Action Required:</strong> Add the CORS plugin to WordPress</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                results.innerHTML = `
+                    <div class="test-result error">
+                        <h3>❌ CORS Test Failed!</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

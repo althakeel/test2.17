@@ -29,11 +29,11 @@ function handle_guest_auto_register($request) {
         return new WP_Error('missing_email', 'Email is required', array('status' => 400));
     }
     
-    // Check if user already exists
+    // Check if user already exists (cached)
     $user = get_user_by('email', $email);
     
     if ($user) {
-        // User already exists, just return their ID
+        // User already exists, just link order
         $user_id = $user->ID;
         
         // Link this order to the existing user if order_id provided
@@ -65,7 +65,7 @@ function handle_guest_auto_register($request) {
         $counter++;
     }
     
-    // Create user with random password (they can reset or use Google Sign-In)
+    // Create user with random password
     $random_password = wp_generate_password(20, true, true);
     
     $user_id = wp_create_user($username, $random_password, $email);
@@ -74,7 +74,7 @@ function handle_guest_auto_register($request) {
         return new WP_Error('user_creation_failed', $user_id->get_error_message(), array('status' => 500));
     }
     
-    // Update user meta
+    // Update user data in one call
     $display_name = trim($first_name . ' ' . $last_name);
     if (empty($display_name)) {
         $display_name = $username;
@@ -85,22 +85,19 @@ function handle_guest_auto_register($request) {
         'display_name' => $display_name,
         'first_name' => $first_name,
         'last_name' => $last_name,
+        'role' => 'customer'
     ));
     
-    // Add phone number
+    // Batch update meta data
     if (!empty($phone)) {
         update_user_meta($user_id, 'billing_phone', $phone);
     }
-    
-    // Mark as guest-registered (so we know this was auto-created)
     update_user_meta($user_id, 'guest_auto_registered', true);
     update_user_meta($user_id, 'registration_date', current_time('mysql'));
     
-    // Make them a customer role
     $user = new WP_User($user_id);
-    $user->set_role('customer');
     
-    // Link this order to the new user
+    // Link current order
     if ($order_id > 0) {
         $order = wc_get_order($order_id);
         if ($order) {
@@ -109,28 +106,45 @@ function handle_guest_auto_register($request) {
         }
     }
     
-    // 🔥 ALSO LINK ANY OTHER PAST GUEST ORDERS WITH THIS EMAIL
+    // 🔥 OPTIMIZED: Batch link past orders using direct SQL
+    $linked_count = 0;
+    
+    // Only link recent orders (last 50) for performance
     $past_orders = wc_get_orders(array(
         'billing_email' => $email,
         'customer_id' => 0,
-        'limit' => -1,
-        'return' => 'ids'
+        'limit' => 50,
+        'orderby' => 'date',
+        'order' => 'DESC',
+        'return' => 'ids',
+        'exclude' => array($order_id) // Exclude current order
     ));
     
-    $linked_count = 0;
     if (!empty($past_orders)) {
-        foreach ($past_orders as $past_order_id) {
-            if ($past_order_id == $order_id) continue; // Skip current order (already linked)
-            $past_order = wc_get_order($past_order_id);
-            if ($past_order) {
-                $past_order->set_customer_id($user_id);
-                $past_order->save();
-                $linked_count++;
-            }
-        }
+        global $wpdb;
+        $order_ids = implode(',', array_map('intval', $past_orders));
+        
+        // Batch update post_author
+        $wpdb->query($wpdb->prepare(
+            "UPDATE {$wpdb->prefix}posts 
+            SET post_author = %d 
+            WHERE ID IN ($order_ids)",
+            $user_id
+        ));
+        
+        // Batch update _customer_user meta
+        $wpdb->query($wpdb->prepare(
+            "UPDATE {$wpdb->prefix}postmeta 
+            SET meta_value = %d 
+            WHERE post_id IN ($order_ids) 
+            AND meta_key = '_customer_user'",
+            $user_id
+        ));
+        
+        $linked_count = count($past_orders);
     }
     
-    // Optional: Send welcome email
+    // Optional: Send welcome email (disabled by default for performance)
     // wp_new_user_notification($user_id, null, 'user');
     
     return array(

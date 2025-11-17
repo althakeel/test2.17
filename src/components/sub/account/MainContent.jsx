@@ -2,6 +2,7 @@
 
 import React from 'react';
 import '../../../assets/styles/maincontent.css';
+import { useAuth } from '../../../contexts/AuthContext';
 
 import OrderSection from '../../sub/account/sections/OrderSection';
 import ReviewsSection from '../../sub/account/sections/ReviewsSection';
@@ -17,8 +18,13 @@ import SecuritySection from '../../sub/account/sections/SecuritySection';
 import PermissionsSection from '../../sub/account/sections/PermissionsSection';
 import NotificationsSection from '../../sub/account/sections/NotificationsSection';
 
-const sectionMap = {
-  'All orders': <OrderSection />,
+const MainContent = ({ activeSection }) => {
+  const { user } = useAuth();
+  const userId = user?.id;
+  const token = user?.token;
+
+  const sectionMap = {
+  'All orders': <OrderSection userId={userId} token={token} />,
 
   'Your reviews': <ReviewsSection />,
   'Your profile': <ProfileSection />,
@@ -34,11 +40,10 @@ const sectionMap = {
   'Notifications': <NotificationsSection />,
 };
 
-const MainContent = ({ section }) => {
   return (
     <main className="account-main">
-      <h2>{section}</h2>
-      {sectionMap[section] || <p>Section not found.</p>}
+      <h2>{activeSection}</h2>
+      {sectionMap[activeSection] || <p>Section not found.</p>}
     </main>
   );
 };

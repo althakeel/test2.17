@@ -29,7 +29,7 @@ const UAE_CITIES = {
 const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, cartItems }) => {
   const [formErrors, setFormErrors] = useState({});
   const [markerPosition, setMarkerPosition] = useState(null);
-  const [mapSelected, setMapSelected] = useState(false);
+  const [mapSelected, setMapSelected] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
 
@@ -93,8 +93,7 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
   // --------------------------
   const validateField = (name, value) => {
     switch (name) {
-      case 'first_name':
-      case 'last_name':
+      case 'full_name':
       case 'street':
       case 'city':
       case 'state':
@@ -104,9 +103,12 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
         if (!value || value.trim() === '') return 'Please select delivery type';
         break;
       case 'phone_number':
-        if (!value || value.trim() === '') return 'Phone number is required';
-        // Accept exactly 7 digits for the phone number field
-        if (!/^[0-9]{7}$/.test(value)) return 'Invalid phone number';
+        if (!value) return 'Phone number is required';
+        // Clean the value first
+        const cleanPhone = value.toString().replace(/[^0-9]/g, '');
+        // Take last 7 digits if longer
+        const last7 = cleanPhone.length > 7 ? cleanPhone.slice(-7) : cleanPhone;
+        if (last7.length !== 7) return 'Must be exactly 7 digits';
         break;
       case 'email':
         if (!value || !/\S+@\S+\.\S+/.test(value)) return 'Invalid email';
@@ -156,23 +158,31 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
     if (isSubmitting) return; // Prevent double clicks
     setIsSubmitting(true);
 
-    // Validate phone: must be 7 digits (the last part)
-    const phone = (formData.shipping.phone_number || '').toString().trim();
-    const phonePrefix = formData.shipping.phone_prefix || '50';
-    const countryCode = formData.shipping.country_code || '+971';
+    // Clean phone number - extract only the 7-digit part
+    let rawPhone = (formData.shipping.phone_number || '').toString().trim();
     
-    console.log('Phone validation:', { phone, length: phone.length, test: /^[0-9]{7}$/.test(phone) });
+    // Remove any non-numeric characters
+    rawPhone = rawPhone.replace(/[^0-9]/g, '');
+    
+    // If phone has country code or prefix already, extract last 7 digits
+    if (rawPhone.length > 7) {
+      rawPhone = rawPhone.slice(-7);
+    }
+    
+    const phonePrefix = formData.shipping.phone_prefix || '50';
+    
+    console.log('Phone validation:', { rawPhone, length: rawPhone.length, prefix: phonePrefix });
     
     // Check if phone_number is exactly 7 digits
-    if (!phone || !/^[0-9]{7}$/.test(phone)) {
-      alert('Please enter a valid 7-digit phone number before submitting.');
-      setFormErrors((prev) => ({ ...prev, phone_number: 'Invalid or incomplete phone number' }));
+    if (!rawPhone || rawPhone.length !== 7) {
+      alert('Please enter a valid 7-digit phone number (e.g., 1234567)');
+      setFormErrors((prev) => ({ ...prev, phone_number: 'Must be exactly 7 digits' }));
       setIsSubmitting(false);
       return;
     }
 
     const errors = {};
-    const requiredFields = ['first_name', 'last_name', 'email', 'phone_number', 'street', 'state', 'city', 'delivery_type'];
+    const requiredFields = ['full_name', 'email', 'street', 'state', 'city', 'delivery_type'];
     requiredFields.forEach((field) => {
       const errorMsg = validateField(field, formData.shipping[field]);
       if (errorMsg) errors[field] = errorMsg;
@@ -186,21 +196,36 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
     }
 
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(formData));
+      // Split full name into first and last name for backend
+      const fullName = (formData.shipping.full_name || '').trim();
+      const nameParts = fullName.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || firstName;
 
-      // Compose full phone number for backend
-      const fullPhone = `${countryCode}${phonePrefix}${phone}`;
+      // Update formData with clean phone number (only 7 digits)
+      const cleanedFormData = {
+        ...formData,
+        shipping: {
+          ...formData.shipping,
+          first_name: firstName,
+          last_name: lastName,
+          phone_number: rawPhone, // Store only 7 digits
+          phone_prefix: phonePrefix
+        }
+      };
 
-      // small delay to ensure phone input updates last digit
-      await new Promise((res) => setTimeout(res, 200));
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cleanedFormData));
+
+      // Compose full phone number for backend: +971 + prefix + 7digits
+      const fullPhone = `+971${phonePrefix}${rawPhone}`;
 
       await fetch('https://db.store1920.com/wp-json/abandoned-checkouts/v1/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           shipping: {
-            ...formData.shipping,
-            phone: fullPhone, // Send complete phone number
+            ...cleanedFormData.shipping,
+            phone: fullPhone,
           },
           cart: cartItems.map((item) => ({
             id: item.id,
@@ -212,8 +237,8 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
         }),
       });
 
-      // Directly submit to checkout (no OTP verification)
-      onSubmit(formData);
+      // Submit to checkout with cleaned data
+      onSubmit(cleanedFormData);
     } catch (err) {
       console.error('Error saving address:', err);
       alert('Something went wrong while saving your address.');
@@ -243,9 +268,9 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
           position: 'relative',
           background: '#fff',
           borderRadius: '18px',
-          width: '96vw',
-          maxWidth: '950px',
-          maxHeight: '96vh',
+          width: '92vw',
+          maxWidth: '700px',
+          maxHeight: '90vh',
           overflow: 'hidden',
           padding: 0,
           display: 'flex',
@@ -301,90 +326,88 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
                 boxSizing: 'border-box',
               }}
             >
-              {/* Map section (left) */}
-              {/* Only show the map if the form is hidden (before address mode selection) */}
-              {!mapSelected && (
+              {/* Map section (left) - Optional helper */}
+              <div
+                style={{
+                  flex: 0.8,
+                  minWidth: 0,
+                  width: '100%',
+                  margin: 0,
+                  display: mapSelected ? 'none' : 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
                 <div
                   style={{
-                    flex: 1,
-                    minWidth: 0,
                     width: '100%',
-                    margin: 0,
+                    height: '320px',
+                    minHeight: 220,
+                    maxWidth: '100%',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'center',
-                    alignItems: 'center',
                   }}
                 >
-                  <div
-                    style={{
-                      width: '100%',
-                      height: '320px',
-                      minHeight: 220,
-                      maxWidth: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <style>{`
-                      @media (min-width: 900px) {
-                        .address-map-area {
-                          height: 100% !important;
-                          min-height: 400px !important;
-                          max-height: none !important;
-                        }
-                        .address-modal-map-container {
-                          height: 420px !important;
-                        }
+                  <style>{`
+                    @media (min-width: 900px) {
+                      .address-map-area {
+                        height: 100% !important;
+                        min-height: 400px !important;
+                        max-height: none !important;
                       }
-                    `}</style>
-                    <div className="address-map-area address-modal-map-container" style={{ width: '100%', height: '100%' }}>
-                      <CustomMap initialPosition={markerPosition} onPlaceSelected={handlePlaceSelected} />
-                    </div>
+                      .address-modal-map-container {
+                        height: 420px !important;
+                      }
+                    }
+                  `}</style>
+                  <div className="address-map-area address-modal-map-container" style={{ width: '100%', height: '100%' }}>
+                    <CustomMap initialPosition={markerPosition} onPlaceSelected={handlePlaceSelected} />
                   </div>
                 </div>
-              )}
-              {/* Form section (right) - only show if mapSelected */}
+              </div>
+              {/* Form section (right) - visible by default */}
               <div
                 style={{
-                  flex: 1.2,
-                  minWidth: 320,
+                  flex: 1,
+                  width: '100%',
                   background: '#fafbfc',
                   borderRadius: 14,
                   boxShadow: '0 2px 12px #0001',
-                  padding: '32px 28px',
-                  display: mapSelected ? 'flex' : 'none',
+                  padding: '24px 20px',
+                  display: 'flex',
                   flexDirection: 'column',
                   gap: 0,
-                  maxHeight: '76vh',
+                  maxHeight: '75vh',
                   overflowY: 'auto',
+                  overflowX: 'hidden',
+                  scrollBehavior: 'smooth',
                 }}
+                className="address-form-scroll"
               >
+                <style>{`
+                  .address-form-scroll::-webkit-scrollbar {
+                    width: 6px;
+                  }
+                  .address-form-scroll::-webkit-scrollbar-track {
+                    background: #f1f1f1;
+                    border-radius: 10px;
+                  }
+                  .address-form-scroll::-webkit-scrollbar-thumb {
+                    background: #c1c1c1;
+                    border-radius: 10px;
+                  }
+                  .address-form-scroll::-webkit-scrollbar-thumb:hover {
+                    background: #a8a8a8;
+                  }
+                `}</style>
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: 18 }}>
                   <div style={{ fontWeight: 700, color: '#444', fontSize: '1.1rem', letterSpacing: 0.2, flex: 1 }}>SHIPPING ADDRESS</div>
-                  <button
-                    type="button"
-                    onClick={() => setMapSelected(false)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#1976d2',
-                      fontWeight: 600,
-                      fontSize: '1rem',
-                      cursor: 'pointer',
-                      padding: '4px 12px',
-                      borderRadius: 6,
-                      transition: 'background 0.2s',
-                    }}
-                    tabIndex={0}
-                  >
-                    ← Back to Map
-                  </button>
                 </div>
-                {mapSelected && (
-                    <form onSubmit={saveAddress} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '18px' }}>
+                {(
+                    <form onSubmit={saveAddress} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               {/* Delivery Type Selector at the top of the form */}
               <div style={{ margin: '0 0 18px 0', gridColumn: '1 / -1' }}>
                 <div style={{ fontWeight: 600, color: '#444', marginBottom: 8 }}>Delivery Type<span style={{ color: 'red' }}>*</span></div>
@@ -448,15 +471,16 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
               </div>
 
               <label>
-                First Name*
-                <input type="text" name="first_name" value={formData.shipping.first_name} onChange={handleFieldChange} />
-                {formErrors.first_name && <span style={{ color: 'red' }}>{formErrors.first_name}</span>}
-              </label>
-
-              <label>
-                Last Name*
-                <input type="text" name="last_name" value={formData.shipping.last_name} onChange={handleFieldChange} />
-                {formErrors.last_name && <span style={{ color: 'red' }}>{formErrors.last_name}</span>}
+                Full Name*
+                <input 
+                  type="text" 
+                  name="full_name" 
+                  value={formData.shipping.full_name || ''} 
+                  onChange={handleFieldChange}
+                  placeholder="Enter your full name"
+                  style={{ padding: '10px', fontSize: '1rem', borderRadius: '6px', border: formErrors.full_name ? '2px solid red' : '1px solid #ccc', marginTop: '6px' }}
+                />
+                {formErrors.full_name && <span style={{ color: 'red', fontSize: '0.9rem', fontWeight: 500 }}>{formErrors.full_name}</span>}
               </label>
 
               <label>
@@ -478,21 +502,37 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
                   <input
                     type="text"
                     name="phone_number"
-                    value={formData.shipping.phone_number ? formData.shipping.phone_number.slice(0, 7).replace(/[^0-9]/g, '') : ''}
+                    value={(() => {
+                      // Clean and display only 7 digits
+                      let val = (formData.shipping.phone_number || '').toString().replace(/[^0-9]/g, '');
+                      if (val.length > 7) val = val.slice(-7); // Take last 7 digits
+                      return val.slice(0, 7); // Max 7 digits
+                    })()}
                     onChange={e => {
                       // Only allow numbers, max 7 digits
                       let val = e.target.value.replace(/[^0-9]/g, '');
-                      if (val.length > 7) val = val.slice(0, 7);
+                      val = val.slice(0, 7); // Limit to 7 digits
                       onChange({ target: { name: 'phone_number', value: val } }, 'shipping');
+                      // Clear error when user starts typing
+                      if (formErrors.phone_number) {
+                        setFormErrors((prev) => ({ ...prev, phone_number: '' }));
+                      }
                     }}
                     maxLength={7}
                     inputMode="numeric"
                     pattern="[0-9]{7}"
-                    style={{ flex: 1, padding: '8px 10px', borderRadius: 6, border: '1px solid #ccc', fontSize: '1rem' }}
+                    style={{ 
+                      flex: 1, 
+                      padding: '8px 10px', 
+                      borderRadius: 6, 
+                      border: formErrors.phone_number ? '2px solid red' : '1px solid #ccc', 
+                      fontSize: '1rem',
+                      outline: formErrors.phone_number ? 'none' : 'auto'
+                    }}
                     placeholder="1234567"
                   />
                 </div>
-                {formErrors.phone_number && <span style={{ color: 'red' }}>{formErrors.phone_number}</span>}
+                {formErrors.phone_number && <span style={{ color: 'red', fontSize: '0.9rem', fontWeight: 500 }}>{formErrors.phone_number}</span>}
               </label>
 
               <label style={{ display: 'flex', flexDirection: 'column', fontWeight: 500, color: '#444' }}> 
@@ -502,12 +542,12 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
                 {formErrors.email && <span style={{ color: 'red', fontSize: '0.85rem' }}>{formErrors.email}</span>} 
               </label>
                 <label>
-                Apartment / Floor
+                Apartment No*
                 <input type="text" name="apartment" value={formData.shipping.apartment} onChange={handleFieldChange} />
               </label>
 
               <label>
-                Street*
+              Building Name / Street*
                 <input type="text" name="street" value={formData.shipping.street} onChange={handleFieldChange} />
                 {formErrors.street && <span style={{ color: 'red' }}>{formErrors.street}</span>}
               </label>

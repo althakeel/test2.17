@@ -1,13 +1,38 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../utils/firebase";
 import axios from "axios";
 
+// Global flag to prevent duplicate syncs
+let isCurrentlySyncing = false;
+let lastSyncedUser = null;
+
 const useFirebaseAutoLogin = (onLogin) => {
+  const hasInitialized = useRef(false);
+  
   useEffect(() => {
+    // Only initialize once per app lifecycle
+    if (hasInitialized.current) {
+      console.log('⏭️ Firebase auth already initialized, skipping...');
+      return;
+    }
+    hasInitialized.current = true;
+    
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        console.log('Firebase user detected:', firebaseUser.email);
+        // Skip if already syncing or already synced this user
+        if (isCurrentlySyncing) {
+          console.log('⏳ Sync already in progress, skipping...');
+          return;
+        }
+        
+        if (lastSyncedUser === firebaseUser.uid) {
+          console.log('✅ User already synced:', firebaseUser.email);
+          return;
+        }
+        
+        console.log('🔄 Firebase user detected:', firebaseUser.email);
+        isCurrentlySyncing = true;
         
         // Extract user details from Firebase
         const userData = {
@@ -44,7 +69,8 @@ const useFirebaseAutoLogin = (onLogin) => {
           localStorage.setItem("email", userInfo.email);
 
           onLogin?.(userInfo);
-          console.log('Auto-login successful with WordPress sync');
+          lastSyncedUser = userData.firebaseUid;
+          console.log('✅ Auto-login successful with WordPress sync');
         } catch (error) {
           console.warn('WordPress sync failed, using Firebase data only:', error);
           
@@ -64,10 +90,15 @@ const useFirebaseAutoLogin = (onLogin) => {
           localStorage.setItem("token", userInfo.token);
 
           onLogin?.(userInfo);
-          console.log('Auto-login successful with Firebase only');
+          lastSyncedUser = userData.firebaseUid;
+          console.log('✅ Auto-login successful with Firebase only');
+        } finally {
+          isCurrentlySyncing = false;
         }
       } else {
-        console.log('No Firebase user detected');
+        console.log('❌ No Firebase user detected');
+        isCurrentlySyncing = false;
+        lastSyncedUser = null;
       }
     });
 

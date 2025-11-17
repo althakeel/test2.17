@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import { CartProvider, useCart } from './contexts/CartContext';
 import { CompareProvider } from './contexts/CompareContext';
 import { AuthProvider } from './contexts/AuthContext';
+import { ToastProvider } from './contexts/ToastContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CookieConsentProvider } from './contexts/CookieConsentContext';
 import { GoogleOAuthProvider } from "@react-oauth/google";
@@ -253,16 +254,17 @@ const AppContent = () => {
 
   return (
     <ThemeProvider>
-<GoogleOAuthProvider clientId={CLIENT_ID}>
+      <ToastProvider>
+        <GoogleOAuthProvider clientId={CLIENT_ID}>
           <QueryClientProvider client={queryClient}>
-          <AuthProvider>
-            <FirebaseAuthSync />
-            <>
-              {!isMobile && <Topbar />}
-              {onCheckoutPage ? (
-                <CheckoutNavbar />
-              ) : isMobile ? (
-                <MobileNavbar
+            <AuthProvider>
+              <FirebaseAuthSync />
+              <>
+                {!isMobile && <Topbar />}
+                {onCheckoutPage ? (
+                  <CheckoutNavbar />
+                ) : isMobile ? (
+                  <MobileNavbar
                   openCart={() => setIsCartOpen(true)}
                   isCartOpen={isCartOpen}
                   cartIconRef={cartIconRef}
@@ -389,6 +391,7 @@ const AppContent = () => {
           </AuthProvider>
         </QueryClientProvider>
       </GoogleOAuthProvider>
+      </ToastProvider>
     </ThemeProvider>
   );
 };

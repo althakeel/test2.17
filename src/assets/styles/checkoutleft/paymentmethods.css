@@ -53,6 +53,23 @@
   accent-color: #10b981;
 }
 
+/* Disabled state for payment methods */
+.payment-method-item input[type="radio"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.payment-method-item:has(input[type="radio"]:disabled) {
+  opacity: 0.6;
+  pointer-events: none;
+  background-color: #f9fafb;
+}
+
+.payment-method-item:has(input[type="radio"]:disabled) .payment-method-label {
+  cursor: not-allowed;
+  color: #9ca3af;
+}
+
 .payment-method-label {
   display: flex;
   align-items: flex-start;

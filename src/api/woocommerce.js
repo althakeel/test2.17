@@ -1,11 +1,13 @@
 
 import axios from "axios";
+import { apiThrottler } from "../utils/requestThrottle";
+
 // ===== Simple In-Memory Cache for Categories and Products =====
 const _categoryCache = {};
 const _productCache = {};
 
 // Version identifier to track which code is running
-const API_VERSION = 'v2.1-static-category-mapping';
+const API_VERSION = 'v2.2-throttled-requests';
 console.log(`🔧 WooCommerce API ${API_VERSION} loaded`);
 
 // ===== STATIC CATEGORY SLUG TO ID MAPPING =====
@@ -228,17 +230,27 @@ export const CONSUMER_SECRET = "cs_2e5da71434cc874771a8ab0ef2dae2ffef3591c0";
 
 const authParams = `consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`;
 
-// ===================== Generic Fetch =====================
+// ===================== Generic Fetch with Throttling =====================
 export async function fetchAPI(endpoint) {
-  try {
-    const separator = endpoint.includes("?") ? "&" : "?";
-    const url = `${API_BASE}${endpoint}${separator}${authParams}`;
-    const response = await axios.get(url);
-    return response.data;
-  } catch (error) {
-    console.error("fetchAPI error:", error);
-    return null;
-  }
+  // Wrap API call in throttler to limit concurrent requests
+  return apiThrottler.throttle(async () => {
+    try {
+      const separator = endpoint.includes("?") ? "&" : "?";
+      const url = `${API_BASE}${endpoint}${separator}${authParams}`;
+      const response = await axios.get(url, {
+        timeout: 30000, // 30 second timeout (increased for slow endpoints)
+      });
+      return response.data;
+    } catch (error) {
+      if (error.code === 'ECONNABORTED') {
+        console.error("fetchAPI timeout:", endpoint, "- Server took too long to respond");
+      } else {
+        console.error("fetchAPI error:", error.message || error);
+      }
+      // Return null instead of throwing to prevent cascading failures
+      return null;
+    }
+  });
 }
 
 // ===================== Categories =====================
