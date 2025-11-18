@@ -94,20 +94,26 @@ const AppContent = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Auto-show sign-in popup on homepage for non-logged-in users
+  // Auto-show sign-in popup on homepage for non-logged-in users (once every 6 hours)
   useEffect(() => {
     if (path === '/') {
-      const user = localStorage.getItem('user');
-      const hasSeenPopup = sessionStorage.getItem('hasSeenSignInPopup');
+      const userData = localStorage.getItem('userData');
+      const lastPopupTime = localStorage.getItem('lastLoginPopupTime');
       
-      // Show sign-in popup after 2 seconds if user is not logged in and hasn't seen popup in this session
-      if (!user && !hasSeenPopup) {
-        const timer = setTimeout(() => {
-          setShowAutoSignIn(true);
-          sessionStorage.setItem('hasSeenSignInPopup', 'true');
-        }, 2000);
+      // Only show if user is not logged in
+      if (!userData) {
+        const now = Date.now();
+        const sixHoursInMs = 6 * 60 * 60 * 1000; // 6 hours
         
-        return () => clearTimeout(timer);
+        // Show popup if never shown before OR if 6 hours have passed since last time
+        if (!lastPopupTime || (now - parseInt(lastPopupTime)) > sixHoursInMs) {
+          const timer = setTimeout(() => {
+            setShowAutoSignIn(true);
+            localStorage.setItem('lastLoginPopupTime', now.toString());
+          }, 2000);
+          
+          return () => clearTimeout(timer);
+        }
       }
     }
   }, [path]);

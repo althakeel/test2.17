@@ -403,7 +403,7 @@ const AllOrders = ({
                 timeZone: 'Asia/Dubai',
               }).format(new Date(order.date_created))}
             </div>
-            <div>Order ID: PO-{order.id}</div>
+            <div>Order ID:{order.id}</div>
             <div>Payment method: {order.payment_method_title || order.payment_method}</div>
           </div>
 

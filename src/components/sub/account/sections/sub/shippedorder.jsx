@@ -50,7 +50,7 @@ const ShippedOrder = ({
         .map((order) => (
           <div key={order.id} className="order-card-simple">
             <div>
-              <strong>Order ID:</strong> PO-{order.id} | <strong>Date:</strong>{' '}
+              <strong>Order ID:</strong> {order.id} | <strong>Date:</strong>{' '}
               {new Date(order.date_created).toLocaleDateString()}
             </div>
             <div className="order-items-grid-simple">
@@ -71,6 +71,10 @@ const ShippedOrder = ({
                   </div>
                 </div>
               ))}
+            </div>
+            <div style={{ marginBottom: 12, fontSize: 14, color: '#666' }}>
+              <div><strong>Total:</strong> {order.currency} {order.total}</div>
+              <div><strong>Payment method:</strong> {order.payment_method_title || order.payment_method || 'N/A'}</div>
             </div>
             <button
               className="btn-secondary"

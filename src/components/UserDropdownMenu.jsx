@@ -56,7 +56,7 @@ const UserDropdownMenu = ({
     { label: 'Your Profile', icon: profileIcon, link: '/myaccount/profile' },
     { label: 'Coupons & Offers', icon: couponIcon, link: '/myaccount/coupons' },
     { label: 'Notifications', icon: notificationIcon, link: '/myaccount/notifications' },
-    { label: 'Browse History', icon: historyIcon, link: '/myaccount/history' },
+    { label: 'Browse History', icon: historyIcon, link: '/myaccount/browsing-history' },
   ];
 
   if (!isOpen && !showConfirmModal) return null;

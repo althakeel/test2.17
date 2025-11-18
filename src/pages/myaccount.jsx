@@ -71,7 +71,7 @@ const MyAccount = () => {
           <Routes>
             <Route path="orders" element={<OrderSection userId={userId} token={token} />} />
             <Route path="reviews" element={<ReviewsSection customerEmail={email} />} />
-            <Route path="profile" element={<ProfileSection userId={userId} token={token} />} />
+            <Route path="profile" element={<ProfileSection userId={userId} userEmail={email} token={token} />} />
             <Route path="coupons" element={<CouponsSection />} />
             {/* <Route
               path="credit-balance"

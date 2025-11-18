@@ -1,5 +1,5 @@
 // OrderTracking.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import dayjs from "dayjs";
 import { FaCheckCircle } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
@@ -45,6 +45,9 @@ export default function OrderTracking({ order = {}, onBack }) {
   const [speedRequestState, setSpeedRequestState] = useState("idle"); // idle | pending | approved | error
   const [speedMessage, setSpeedMessage] = useState("");
   const [guaranteeModalOpen, setGuaranteeModalOpen] = useState(false);
+  const [c3xTrackingData, setC3xTrackingData] = useState(null);
+  const [c3xLogs, setC3xLogs] = useState([]);
+  const [loadingTracking, setLoadingTracking] = useState(false);
 
   const trackingInfo = order.tracking_info || {};
   const history = trackingInfo.history || [];
@@ -53,6 +56,42 @@ export default function OrderTracking({ order = {}, onBack }) {
   const currentStep = getCurrentStepIndex(currentStatus);
 
   const email = order.billing?.email || order.customer_email || order.email || "Not available";
+
+  // Fetch C3X tracking data when component mounts
+  useEffect(() => {
+    const fetchC3XTracking = async () => {
+      if (!order.id) return;
+      
+      setLoadingTracking(true);
+      try {
+        const response = await fetch(
+          "https://db.store1920.com/wp-json/custom/v1/track-c3x-reference",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ TrackingAWB: order.id.toString() }),
+          }
+        );
+
+        if (!response.ok) throw new Error("C3X API error");
+        const data = await response.json();
+
+        if (data?.AirwayBillTrackList?.length) {
+          const trackingData = data.AirwayBillTrackList[0];
+          if (trackingData.AirWayBillNo) {
+            setC3xTrackingData(trackingData);
+            setC3xLogs(trackingData.TrackingLogDetails || []);
+          }
+        }
+      } catch (err) {
+        console.error("C3X Tracking Error:", err);
+      } finally {
+        setLoadingTracking(false);
+      }
+    };
+
+    fetchC3XTracking();
+  }, [order.id]);
 
   // Simulate admin approval. Replace with a real endpoint call.
   const simulateApproval = async (orderId) => {
@@ -146,7 +185,7 @@ export default function OrderTracking({ order = {}, onBack }) {
                 <div className="ot-guarantee-section">
                   <h3>AED20.00 Credit for Delay</h3>
                   <p>
-                    If any item(s) in your order arrive after <strong>16 Aug</strong>, we
+                    If any item(s) in your order arrive after <strong> 12 -15 days</strong>, we
                     will issue you a AED20.00 credit within 48 hours.
                   </p>
                   <p className="ot-note">Some exceptions apply. See our policy page for details.</p>
@@ -189,8 +228,12 @@ export default function OrderTracking({ order = {}, onBack }) {
 
         <div className="ot-header">
           <div className="ot-header-left">
-            <h2>Gathering items</h2>
-            <p className="ot-sub">80.0% of orders typically ship out within 2 days</p>
+            <h2>{c3xTrackingData?.CurrentStatus || "Gathering items"}</h2>
+            <p className="ot-sub">
+              {c3xTrackingData ? 
+                `Reference: ${c3xTrackingData.Reference || order.id}` : 
+                "80.0% of orders typically ship out within 2 days"}
+            </p>
             <button className="ot-link-btn" onClick={() => setTrackingModalOpen(true)}>
               View tracking status
             </button>
@@ -249,7 +292,7 @@ export default function OrderTracking({ order = {}, onBack }) {
 
           <div className="ot-delivery">
             <div className="ot-delivery-title">Delivery:</div>
-            <div className="ot-delivery-value">4-7 business days (13-16 Aug)</div>
+            <div className="ot-delivery-value">4-7 business days </div>
           </div>
         </div>
 
@@ -279,48 +322,105 @@ export default function OrderTracking({ order = {}, onBack }) {
       </button>
       <h3 className="ot-modal-title">Tracking status</h3>
 
-      <div className="ot-timeline">
-        {(Array.isArray(order.notes) && order.notes.length > 0
-          ? [...order.notes].reverse() // reverse to show oldest first
-          : [{ content: trackingInfo.status || "Order submitted", date_created: new Date().toISOString() }]
-        ).map((note, i, arr) => {
-          const isLatest = i === arr.length - 1; // last item in reversed array is latest
-          return (
-            <div key={note.id || i} className="ot-timeline-item" style={{ marginBottom: "1rem" }}>
-              <div
-                className={`ot-dot ${isLatest ? "green" : ""}`}
-                style={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: "50%",
-                  backgroundColor: isLatest ? "#4caf50" : "#ccc",
-                  display: "inline-block",
-                  marginRight: 8,
-                  marginTop: 4,
-                }}
-              />
-              <div className="ot-timeline-content" style={{ display: "inline-block", verticalAlign: "top" }}>
+      {loadingTracking && (
+        <div style={{ padding: "20px", textAlign: "center", color: "#666" }}>
+          Loading tracking information...
+        </div>
+      )}
+
+      {!loadingTracking && c3xLogs.length > 0 && (
+        <div className="ot-timeline">
+          {c3xLogs.map((log, i) => {
+            const isLatest = i === 0; // First item is latest in C3X response
+            return (
+              <div key={i} className="ot-timeline-item" style={{ marginBottom: "1rem" }}>
                 <div
-                  className={`ot-timeline-status ${isLatest ? "green-text" : ""}`}
+                  className={`ot-dot ${isLatest ? "green" : ""}`}
                   style={{
-                    fontWeight: "600",
-                    fontSize: "1rem",
-                    color: isLatest ? "#4caf50" : "#555",
+                    width: 12,
+                    height: 12,
+                    borderRadius: "50%",
+                    backgroundColor: isLatest ? "#4caf50" : "#ccc",
+                    display: "inline-block",
+                    marginRight: 8,
+                    marginTop: 4,
                   }}
-                >
-                  {note.content}
-                </div>
-                <div
-                  className="ot-timeline-date"
-                  style={{ fontSize: "0.85rem", color: "#888", marginTop: 2 }}
-                >
-                  {dayjs(note.date_created).format("D MMMM YYYY, HH:mm")}
+                />
+                <div className="ot-timeline-content" style={{ display: "inline-block", verticalAlign: "top" }}>
+                  <div
+                    className={`ot-timeline-status ${isLatest ? "green-text" : ""}`}
+                    style={{
+                      fontWeight: "600",
+                      fontSize: "1rem",
+                      color: isLatest ? "#4caf50" : "#555",
+                    }}
+                  >
+                    {log.Remarks || log.Activity || "Status update"}
+                  </div>
+                  <div
+                    className="ot-timeline-date"
+                    style={{ fontSize: "0.85rem", color: "#888", marginTop: 2 }}
+                  >
+                    {log.StatusDate || log.Date ? 
+                      dayjs(log.StatusDate || log.Date).format("D MMMM YYYY, HH:mm") : 
+                      "Date not available"}
+                  </div>
+                  {log.Location && (
+                    <div style={{ fontSize: "0.85rem", color: "#888", marginTop: 2 }}>
+                      📍 {log.Location}
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
+
+      {!loadingTracking && c3xLogs.length === 0 && (
+        <div className="ot-timeline">
+          {(Array.isArray(order.notes) && order.notes.length > 0
+            ? [...order.notes].reverse() // reverse to show oldest first
+            : [{ content: trackingInfo.status || "Order submitted", date_created: new Date().toISOString() }]
+          ).map((note, i, arr) => {
+            const isLatest = i === arr.length - 1; // last item in reversed array is latest
+            return (
+              <div key={note.id || i} className="ot-timeline-item" style={{ marginBottom: "1rem" }}>
+                <div
+                  className={`ot-dot ${isLatest ? "green" : ""}`}
+                  style={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: "50%",
+                    backgroundColor: isLatest ? "#4caf50" : "#ccc",
+                    display: "inline-block",
+                    marginRight: 8,
+                    marginTop: 4,
+                  }}
+                />
+                <div className="ot-timeline-content" style={{ display: "inline-block", verticalAlign: "top" }}>
+                  <div
+                    className={`ot-timeline-status ${isLatest ? "green-text" : ""}`}
+                    style={{
+                      fontWeight: "600",
+                      fontSize: "1rem",
+                      color: isLatest ? "#4caf50" : "#555",
+                    }}
+                  >
+                    {note.content}
+                  </div>
+                  <div
+                    className="ot-timeline-date"
+                    style={{ fontSize: "0.85rem", color: "#888", marginTop: 2 }}
+                  >
+                    {dayjs(note.date_created).format("D MMMM YYYY, HH:mm")}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <div
         className="ot-modal-footer"
@@ -335,42 +435,145 @@ export default function OrderTracking({ order = {}, onBack }) {
       {/* --- UPDATES MODAL --- */}
       {updatesModalOpen && (
         <div className="ot-modal-backdrop" onClick={() => setUpdatesModalOpen(false)}>
-          <div className="ot-modal ot-modal-small" onClick={(e) => e.stopPropagation()}>
-            <button className="ot-modal-close" onClick={() => setUpdatesModalOpen(false)}>
-              <IoClose size={20} />
+          <div className="ot-modal ot-modal-small" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px' }}>
+            <button 
+              className="ot-modal-close" 
+              onClick={() => setUpdatesModalOpen(false)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: 'transparent',
+                border: 'none',
+                fontSize: '24px',
+                cursor: 'pointer',
+                color: '#666',
+                padding: '4px',
+                lineHeight: 1,
+              }}
+            >
+              ×
             </button>
-            <h3 className="ot-modal-title">Get the latest shipment updates</h3>
+            
+            <h3 style={{
+              fontSize: '20px',
+              fontWeight: '600',
+              color: '#1a1a1a',
+              marginBottom: '16px',
+              paddingRight: '30px',
+            }}>
+              Get the latest shipment updates
+            </h3>
 
-            <div className="ot-updates-body">
-              <p>We'll send you shipment updates via email for this order.</p>
+            <div style={{ marginBottom: '24px' }}>
+              <p style={{
+                fontSize: '14px',
+                color: '#666',
+                lineHeight: '1.6',
+                marginBottom: '12px',
+              }}>
+                We'll send you shipment updates via email for this order.
+              </p>
 
-              <div className="ot-update-email">
-                <label>Email address: {email}</label>
+              <div style={{
+                background: '#f8f9fa',
+                padding: '12px 16px',
+                borderRadius: '8px',
+                marginBottom: '20px',
+              }}>
+                <label style={{
+                  fontSize: '13px',
+                  color: '#444',
+                  fontWeight: '500',
+                }}>
+                  Email address: <span style={{ color: '#ff5100', fontWeight: '600' }}>{email}</span>
+                </label>
               </div>
 
-              <div className="ot-update-list">
-                <div className="ot-update-sub">Updates may include:</div>
-                <ol>
-                  <li>Tracking updates</li>
-                  <li>Delivery problems</li>
-                  <li>Delivery updates</li>
-                  <li>Package delivered</li>
-                  <li>Package ready for pickup</li>
-                </ol>
+              <div style={{
+                fontSize: '13px',
+                color: '#444',
+                fontWeight: '500',
+                marginBottom: '8px',
+              }}>
+                Updates may include:
               </div>
+              
+              <ol style={{
+                paddingLeft: '20px',
+                margin: 0,
+              }}>
+                {['Tracking updates', 'Delivery problems', 'Delivery updates', 'Package delivered', 'Package ready for pickup'].map((item, idx) => (
+                  <li key={idx} style={{
+                    fontSize: '14px',
+                    color: '#666',
+                    lineHeight: '2',
+                    paddingLeft: '4px',
+                  }}>
+                    {item}
+                  </li>
+                ))}
+              </ol>
             </div>
 
-            <div className="ot-modal-actions">
-              <button className="ot-btn ot-btn-secondary" onClick={() => setUpdatesModalOpen(false)}>
+            <div style={{ 
+              display: 'flex', 
+              gap: '12px',
+              marginTop: '24px',
+            }}>
+              <button 
+                onClick={() => setUpdatesModalOpen(false)}
+                style={{
+                  flex: 1,
+                  padding: '12px 20px',
+                  background: '#fff',
+                  color: '#666',
+                  border: '1px solid #ddd',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#f5f5f5';
+                  e.currentTarget.style.borderColor = '#bbb';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#fff';
+                  e.currentTarget.style.borderColor = '#ddd';
+                }}
+              >
                 Close
               </button>
               <button
-                className="ot-btn ot-btn-primary"
                 onClick={() => {
                   // Here you would call an endpoint to subscribe the email for updates.
                   // For now just show confirmation and close.
                   // e.g. POST /wp-json/custom/v1/subscribe-updates { orderId, email }
                   setUpdatesModalOpen(false);
+                }}
+                style={{
+                  flex: 1,
+                  padding: '12px 20px',
+                  background: '#ff5100',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#e64800';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 81, 0, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#ff5100';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
                 }}
               >
                 Subscribe

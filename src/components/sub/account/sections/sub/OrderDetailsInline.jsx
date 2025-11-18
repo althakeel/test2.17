@@ -69,7 +69,7 @@ const OrderDetails = ({ order }) => {
           <section style={styles.card}>
             <h4 style={styles.cardTitle}>Delivery time</h4>
             <p style={{ ...styles.cardText, color: '#12b76a', fontWeight: 500 }}>
-              4-7 business days (e.g., 13-16 Aug)
+              4-7 business days 
             </p>
             <ul style={styles.deliveryList}>
               <li>AED20.00 Credit for delay</li>

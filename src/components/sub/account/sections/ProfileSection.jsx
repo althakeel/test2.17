@@ -3,8 +3,8 @@ import axios from 'axios';
 import '../../../../assets/styles/myaccount/ProfileSection.css';
 
 const API_BASE = 'https://db.store1920.com/wp-json/wc/v3';
-const CONSUMER_KEY = 'ck_2e4ba96dde422ed59388a09a139cfee591d98263';
-const CONSUMER_SECRET = 'cs_43b449072b8d7d63345af1b027f2c8026fd15428';
+const CONSUMER_KEY = 'ck_e09e8cedfae42e5d0a37728ad6c3a6ce636695dd';
+const CONSUMER_SECRET = 'cs_2d41bc796c7d410174729ffbc2c230f27d6a1eda';
 
 function getInitials(user) {
   if (user.first_name && user.last_name) {
@@ -31,7 +31,7 @@ function getColorForInitials(initials) {
   return colors[charCode % colors.length];
 }
 
-const ProfileSection = ({ userId }) => {
+const ProfileSection = ({ userId, userEmail }) => {
   const [user, setUser] = useState(null);
   const [ordersCount, setOrdersCount] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -41,7 +41,7 @@ const ProfileSection = ({ userId }) => {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!userId) {
+    if (!userId && !userEmail) {
       setUser(null);
       setOrdersCount(null);
       setLoading(false);
@@ -52,30 +52,65 @@ const ProfileSection = ({ userId }) => {
       setLoading(true);
       setError(null);
       try {
-        const userRes = await axios.get(`${API_BASE}/customers/${userId}`, {
-          auth: { username: CONSUMER_KEY, password: CONSUMER_SECRET },
-          timeout: 8000,
-        });
-        setUser(userRes.data);
+        console.log('Fetching profile for userId:', userId, 'email:', userEmail);
+        
+        let userData = null;
+        let actualUserId = userId;
+
+        // Try to fetch by userId first
+        if (userId) {
+          try {
+            const userRes = await axios.get(`${API_BASE}/customers/${userId}`, {
+              auth: { username: CONSUMER_KEY, password: CONSUMER_SECRET },
+              timeout: 8000,
+            });
+            userData = userRes.data;
+            actualUserId = userData.id;
+          } catch (idError) {
+            console.warn('Failed to fetch by ID, trying by email...', idError.response?.status);
+          }
+        }
+
+        // If ID fetch failed or no userId, try fetching by email
+        if (!userData && userEmail) {
+          const searchRes = await axios.get(`${API_BASE}/customers`, {
+            auth: { username: CONSUMER_KEY, password: CONSUMER_SECRET },
+            timeout: 8000,
+            params: { email: userEmail, per_page: 1 },
+          });
+          if (searchRes.data && searchRes.data.length > 0) {
+            userData = searchRes.data[0];
+            actualUserId = userData.id;
+            console.log('Found user by email:', actualUserId);
+          }
+        }
+
+        if (!userData) {
+          throw new Error('User not found');
+        }
+        
+        console.log('Profile data loaded:', userData);
+        setUser(userData);
 
         // Initialize formData with fullName
         setFormData({
-          fullName: `${userRes.data.first_name || ''} ${userRes.data.last_name || ''}`.trim(),
-          email: userRes.data.email || '',
-          phone: userRes.data.billing?.phone || '',
-          billing: { ...userRes.data.billing },
-          shipping: { ...userRes.data.shipping },
+          fullName: `${userData.first_name || ''} ${userData.last_name || ''}`.trim(),
+          email: userData.email || '',
+          phone: userData.billing?.phone || '',
+          billing: { ...userData.billing },
+          shipping: { ...userData.shipping },
         });
 
         const ordersRes = await axios.get(`${API_BASE}/orders`, {
           auth: { username: CONSUMER_KEY, password: CONSUMER_SECRET },
           timeout: 8000,
-          params: { customer: userId, per_page: 1 },
+          params: { customer: actualUserId, per_page: 1 },
         });
         const totalOrders = parseInt(ordersRes.headers['x-wp-total'], 10) || 0;
         setOrdersCount(totalOrders);
       } catch (e) {
-        setError('Failed to load profile data.');
+        console.error('Failed to load profile:', e.response?.data || e.message);
+        setError(`Failed to load profile data. ${e.response?.data?.message || e.message}`);
         setUser(null);
         setOrdersCount(null);
       } finally {
@@ -84,7 +119,7 @@ const ProfileSection = ({ userId }) => {
     };
 
     fetchUserAndOrders();
-  }, [userId]);
+  }, [userId, userEmail]);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => {

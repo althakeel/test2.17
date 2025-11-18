@@ -85,7 +85,7 @@ const OrderDelivered = ({ orders, handleProductClick, slugify, viewOrderDetails 
           {/* Header */}
           <div className="order-header-simple">
             <div>
-              <strong>Order ID:</strong> PO-{order.id} | <strong>Date:</strong>{' '}
+              <strong>Order ID:</strong> {order.id} | <strong>Date:</strong>{' '}
               {new Date(order.date_created).toLocaleDateString()} | <strong>Email:</strong> {order.billing.email}
             </div>
           </div>

@@ -21,9 +21,9 @@ const MobileNavbar = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [dropdownVisible, setDropdownVisible] = useState(false);
 
-  const [logoIndex, setLogoIndex] = useState(Number(localStorage.getItem('navbarLogoIndex') || 0));
-  const [bgColor, setBgColor] = useState(logoIndex === 0 ? '#fff3' : '#ffffff');
-  const [iconColor, setIconColor] = useState(logoIndex === 0 ? '#333' : '#000');
+  // Always use theme color for navbar
+  const bgColor = '#ff5100';
+  const iconColor = '#ffffff';
 
   const containerRef = useRef(null);
   const inputRef = useRef(null);
@@ -97,31 +97,8 @@ const MobileNavbar = () => {
     else goToProduct(item.slug);
   };
 
-  // Automatic Logo & Icon Color Cycling
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setLogoIndex(prev => {
-        const next = (prev + 1) % 2;
-        setBgColor(next === 0 ? '#fff3' : '#ffffff');
-        setIconColor(next === 0 ? '#333' : '#000');
-        localStorage.setItem('navbarLogoIndex', next);
-        return next;
-      });
-    }, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
   const handleNavbarClose = () => {
     setDropdownVisible(false);
-    setTimeout(() => {
-      setLogoIndex(prev => {
-        const next = (prev + 1) % 2;
-        setBgColor(next === 0 ? '#fff3' : '#ffffff');
-        setIconColor(next === 0 ? '#333' : '#000');
-        localStorage.setItem('navbarLogoIndex', next);
-        return next;
-      });
-    }, 3000);
   };
 
   return (
@@ -141,7 +118,7 @@ const MobileNavbar = () => {
       {/* Logo */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
         <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
-          <img src={logoIndex === 0 ? LogoMain : LogoMain} alt="Logo" style={{ width: 40, display: 'block', userSelect: 'none' }} draggable={false}/>
+          <img src={LogoMain} alt="Logo" style={{ width: 40, display: 'block', userSelect: 'none' }} draggable={false}/>
         </button>
       </div>
 

@@ -3,8 +3,13 @@ import Modal from 'react-modal';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
 import CustomMap from '../../components/checkoutleft/CustomMap';
+import axios from 'axios';
+import { useAuth } from '../../contexts/AuthContext';
 
 const LOCAL_STORAGE_KEY = 'checkoutAddressData';
+const API_BASE = 'https://db.store1920.com/wp-json/wc/v3';
+const CK = 'ck_e09e8cedfae42e5d0a37728ad6c3a6ce636695dd';
+const CS = 'cs_2d41bc796c7d410174729ffbc2c230f27d6a1eda';
 
 const UAE_EMIRATES = [
   { code: 'AUH', name: 'Abu Dhabi' },
@@ -27,10 +32,14 @@ const UAE_CITIES = {
 };
 
 const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, cartItems }) => {
+  const { user } = useAuth();
   const [formErrors, setFormErrors] = useState({});
   const [markerPosition, setMarkerPosition] = useState(null);
   const [mapSelected, setMapSelected] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [loadingSavedAddresses, setLoadingSavedAddresses] = useState(false);
+  const [showSavedAddresses, setShowSavedAddresses] = useState(false);
 
 
   // --- City/Area Google Places Autocomplete ---
@@ -73,6 +82,45 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
   // Load saved address
   // --------------------------
   useEffect(() => {
+    // Fetch saved addresses from WooCommerce if user is logged in
+    if (user?.id) {
+      setLoadingSavedAddresses(true);
+      axios
+        .get(`${API_BASE}/customers/${user.id}`, {
+          params: { consumer_key: CK, consumer_secret: CS },
+        })
+        .then((res) => {
+          const customer = res.data;
+          const addresses = [];
+          
+          if (customer.billing && customer.billing.address_1) {
+            addresses.push({
+              type: 'Billing',
+              ...customer.billing,
+            });
+          }
+          
+          if (customer.shipping && customer.shipping.address_1) {
+            const isDifferent = customer.shipping.address_1 !== customer.billing?.address_1;
+            if (isDifferent || !customer.billing?.address_1) {
+              addresses.push({
+                type: 'Shipping',
+                ...customer.shipping,
+              });
+            }
+          }
+          
+          setSavedAddresses(addresses);
+        })
+        .catch((err) => {
+          console.error('Error loading saved addresses:', err);
+        })
+        .finally(() => {
+          setLoadingSavedAddresses(false);
+        });
+    }
+    
+    // Load from localStorage
     const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (saved) {
       try {
@@ -94,7 +142,37 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
         console.warn('Failed to parse saved checkout address:', err);
       }
     }
-  }, []);
+  }, [user]);
+
+  // Handler to use saved address
+  const handleUseSavedAddress = (address) => {
+    // Parse phone number to extract just the 7-digit part
+    const parsePhone = (phoneStr) => {
+      if (!phoneStr) return '';
+      const cleaned = phoneStr.replace(/^\+?971/, '').replace(/[^0-9]/g, '');
+      return cleaned.slice(0, 7); // Get first 7 digits after country code
+    };
+
+    // Map saved address to form format
+    const addressData = {
+      full_name: `${address.first_name || ''} ${address.last_name || ''}`.trim(),
+      street: address.address_1 || '',
+      apartment: address.address_2 || '',
+      city: address.city || '',
+      state: address.state || '',
+      postal_code: address.postcode || '',
+      country: address.country || 'AE',
+      phone_number: parsePhone(address.phone),
+      email: address.email || formData.shipping.email,
+    };
+
+    // Update each field
+    Object.keys(addressData).forEach((key) => {
+      onChange({ target: { name: key, value: addressData[key] } }, 'shipping');
+    });
+
+    setShowSavedAddresses(false);
+  };
 
   // --------------------------
   // Validation Logic
@@ -146,14 +224,35 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
   // --------------------------
   // Handle Map Selection
   // --------------------------
-  const handlePlaceSelected = ({ street, city, state, lat, lng }) => {
-    const stateObj = UAE_EMIRATES.find((s) => s.name.toLowerCase() === state?.toLowerCase());
-    const stateCode = stateObj ? stateObj.code : '';
-    onChange({ target: { name: 'street', value: street } }, 'shipping');
-    onChange({ target: { name: 'city', value: city } }, 'shipping');
-    onChange({ target: { name: 'state', value: stateCode } }, 'shipping');
+  const handlePlaceSelected = ({ street, city, state, country, lat, lng }) => {
+    console.log('Address from map:', { street, city, state, country, lat, lng });
+    
+    // Find state code from state name
+    let stateCode = '';
+    if (state) {
+      const stateObj = UAE_EMIRATES.find((s) => 
+        s.name.toLowerCase() === state.toLowerCase() || 
+        s.code.toLowerCase() === state.toLowerCase()
+      );
+      stateCode = stateObj ? stateObj.code : 'DXB'; // Default to Dubai if not found
+    }
+    
+    // Update all form fields
+    if (street) {
+      onChange({ target: { name: 'street', value: street } }, 'shipping');
+    }
+    if (city) {
+      onChange({ target: { name: 'city', value: city } }, 'shipping');
+    }
+    if (stateCode) {
+      onChange({ target: { name: 'state', value: stateCode } }, 'shipping');
+    }
+    
     setMarkerPosition({ lat, lng });
     setMapSelected(true);
+    
+    // Show success message
+    console.log('Form updated with address');
   };
 
   // --------------------------
@@ -227,6 +326,7 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
       // Compose full phone number for backend: +971 + prefix + 7digits
       const fullPhone = `+971${phonePrefix}${rawPhone}`;
 
+      // Save to abandoned cart
       await fetch('https://db.store1920.com/wp-json/abandoned-checkouts/v1/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -244,6 +344,46 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
           })),
         }),
       });
+
+      // If "Save as default" is checked and user is logged in, save to WooCommerce
+      if (formData.saveAsDefault && user?.id) {
+        try {
+          await axios.put(
+            `${API_BASE}/customers/${user.id}`,
+            {
+              billing: {
+                first_name: firstName,
+                last_name: lastName,
+                address_1: cleanedFormData.shipping.street || '',
+                address_2: cleanedFormData.shipping.apartment || '',
+                city: cleanedFormData.shipping.city || '',
+                state: cleanedFormData.shipping.state || '',
+                postcode: cleanedFormData.shipping.postal_code || '',
+                country: cleanedFormData.shipping.country || 'AE',
+                phone: fullPhone,
+                email: cleanedFormData.shipping.email || user.email || '',
+              },
+              shipping: {
+                first_name: firstName,
+                last_name: lastName,
+                address_1: cleanedFormData.shipping.street || '',
+                address_2: cleanedFormData.shipping.apartment || '',
+                city: cleanedFormData.shipping.city || '',
+                state: cleanedFormData.shipping.state || '',
+                postcode: cleanedFormData.shipping.postal_code || '',
+                country: cleanedFormData.shipping.country || 'AE',
+              }
+            },
+            {
+              params: { consumer_key: CK, consumer_secret: CS },
+            }
+          );
+          console.log('Address saved to account successfully');
+        } catch (saveError) {
+          console.error('Error saving address to account:', saveError);
+          // Don't block checkout if saving to account fails
+        }
+      }
 
       // Submit to checkout with cleaned data
       onSubmit(cleanedFormData);
@@ -268,10 +408,46 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 1000,
-        padding: '24px',
+        padding: '12px',
       }}
     >
+      <style>{`
+        @media (max-width: 768px) {
+          .address-modal-wrapper {
+            width: 98vw !important;
+            max-width: 100% !important;
+            max-height: 96vh !important;
+            border-radius: 12px !important;
+          }
+          .address-modal-title {
+            font-size: 1.2rem !important;
+            margin: 10px 0 8px 0 !important;
+          }
+          .address-form-container {
+            padding: 16px 14px !important;
+            border-radius: 12px 12px 0 0 !important;
+          }
+          .address-form-grid {
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+          }
+          .address-modal-buttons {
+            flex-direction: column !important;
+            gap: 10px !important;
+          }
+          .address-modal-buttons button {
+            width: 100% !important;
+            padding: 14px 18px !important;
+          }
+          .address-close-btn {
+            top: 10px !important;
+            right: 12px !important;
+            font-size: 20px !important;
+          }
+        }
+      `}</style>
       <div
+        className="address-modal-wrapper"
         style={{
           position: 'relative',
           background: '#fff',
@@ -288,6 +464,7 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
       >
         <button
           onClick={onClose}
+          className="address-close-btn"
           style={{
             position: 'absolute',
             top: '15px',
@@ -298,6 +475,7 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
             fontWeight: 600,
             cursor: 'pointer',
             color: '#555',
+            zIndex: 10,
           }}
         >
           ✕
@@ -310,89 +488,54 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
             width: '100%',
             height: '100%',
             gap: 0,
+            overflow: 'hidden',
           }}
         >
-          <h2 style={{ margin: '16px 0 0 0', fontSize: '1.5rem', fontWeight: 700, color: '#333', textAlign: 'center' }}>
+          <h2 className="address-modal-title" style={{ margin: '16px 0 12px 0', fontSize: '1.5rem', fontWeight: 700, color: '#333', textAlign: 'center' }}>
             Edit Address
           </h2>
+          
+          {/* Map Section - Top */}
+          <div
+            style={{
+              width: '100%',
+              padding: '0 16px',
+              boxSizing: 'border-box',
+              marginBottom: 16,
+            }}
+          >
+            <div style={{ width: '100%' }}>
+              <CustomMap initialPosition={markerPosition} onPlaceSelected={handlePlaceSelected} />
+            </div>
+          </div>
+
+          {/* Form Section - Bottom with Scroll */}
           <div
             style={{
               display: 'flex',
               flexDirection: 'column',
               gap: 0,
               width: '100%',
+              flex: 1,
+              overflow: 'hidden',
             }}
           >
             <div
+              className="address-form-scroll address-form-container"
               style={{
-                display: 'flex',
-                flexDirection: 'row',
-                gap: 0,
                 width: '100%',
-                minHeight: 500,
-                padding: '12px 16px 0 16px',
-                boxSizing: 'border-box',
-              }}
-            >
-              {/* Map section (left) - Optional helper */}
-              <div
-                style={{
-                  flex: 0.8,
-                  minWidth: 0,
-                  width: '100%',
-                  margin: 0,
-                  display: mapSelected ? 'none' : 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                <div
-                  style={{
-                    width: '100%',
-                    height: '320px',
-                    minHeight: 220,
-                    maxWidth: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <style>{`
-                    @media (min-width: 900px) {
-                      .address-map-area {
-                        height: 100% !important;
-                        min-height: 400px !important;
-                        max-height: none !important;
-                      }
-                      .address-modal-map-container {
-                        height: 420px !important;
-                      }
-                    }
-                  `}</style>
-                  <div className="address-map-area address-modal-map-container" style={{ width: '100%', height: '100%' }}>
-                    <CustomMap initialPosition={markerPosition} onPlaceSelected={handlePlaceSelected} />
-                  </div>
-                </div>
-              </div>
-              {/* Form section (right) - visible by default */}
-              <div
-                style={{
-                  flex: 1,
-                  width: '100%',
-                  background: '#fafbfc',
-                  borderRadius: 14,
-                  boxShadow: '0 2px 12px #0001',
-                  padding: '24px 20px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 0,
-                  maxHeight: '75vh',
-                  overflowY: 'auto',
-                  overflowX: 'hidden',
+                background: '#fafbfc',
+                borderRadius: '14px 14px 0 0',
+                boxShadow: '0 -2px 12px #0001',
+                padding: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 0,
+                height: '100%',
+                overflowY: 'auto',
+                overflowX: 'hidden',
                   scrollBehavior: 'smooth',
                 }}
-                className="address-form-scroll"
               >
                 <style>{`
                   .address-form-scroll::-webkit-scrollbar {
@@ -409,31 +552,132 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
                   .address-form-scroll::-webkit-scrollbar-thumb:hover {
                     background: #a8a8a8;
                   }
+                  .address-form-grid label {
+                    display: flex;
+                    flex-direction: column;
+                    font-weight: 500;
+                    color: #444;
+                    font-size: 0.95rem;
+                  }
+                  .address-form-grid input,
+                  .address-form-grid select {
+                    margin-top: 6px;
+                    padding: 10px;
+                    font-size: 1rem;
+                    border-radius: 6px;
+                    border: 1px solid #ccc;
+                    outline: none;
+                    transition: border 0.2s;
+                  }
+                  .address-form-grid input:focus,
+                  .address-form-grid select:focus {
+                    border-color: #1976d2;
+                  }
+                  @media (max-width: 768px) {
+                    .address-form-grid label {
+                      font-size: 0.9rem;
+                    }
+                    .address-form-grid input,
+                    .address-form-grid select {
+                      padding: 10px 8px;
+                      font-size: 0.95rem;
+                    }
+                  }
                 `}</style>
+                {/* Mobile Number field before SHIPPING ADDRESS - will be removed */}
+                <div style={{ display: 'none' }}>
+                  <label style={{ display: 'flex', flexDirection: 'column', fontWeight: 500, color: '#444', fontSize: '0.95rem' }}>
+                    Mobile Number*
+                    <style>{`
+                      .mobile-number-top-container {
+                        display: flex;
+                        gap: 5px;
+                        align-items: stretch;
+                        margin-top: 6px;
+                      }
+                      .mobile-number-top-container > * {
+                        box-sizing: border-box;
+                      }
+                      @media (max-width: 768px) {
+                        .mobile-number-top-container {
+                          gap: 4px;
+                        }
+                      }
+                    `}</style>
+                    <div className="mobile-number-top-container">
+                      <span style={{ width: '55px', flexShrink: 0, padding: '10px 6px', borderRadius: 6, border: '1px solid #ccc', background: '#f7f7f7', fontWeight: 500, fontSize: '0.95rem', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+971</span>
+                      <select
+                        value={formData.shipping.phone_prefix || '50'}
+                        onChange={e => onChange({ target: { name: 'phone_prefix', value: e.target.value } }, 'shipping')}
+                        style={{ width: '60px', flexShrink: 0, padding: '10px 6px', borderRadius: 6, border: '1px solid #ccc', fontWeight: 500, fontSize: '0.95rem', background: '#fff' }}>
+                        <option value="50">50</option>
+                        <option value="52">52</option>
+                        <option value="54">54</option>
+                        <option value="55">55</option>
+                        <option value="56">56</option>
+                        <option value="58">58</option>
+                      </select>
+                      <input
+                        type="text"
+                        name="phone_number"
+                        value={(() => {
+                          let val = (formData.shipping.phone_number || '').toString().replace(/[^0-9]/g, '');
+                          if (val.length > 7) val = val.slice(-7);
+                          return val.slice(0, 7);
+                        })()}
+                        onChange={e => {
+                          let val = e.target.value.replace(/[^0-9]/g, '');
+                          val = val.slice(0, 7);
+                          onChange({ target: { name: 'phone_number', value: val } }, 'shipping');
+                          if (formErrors.phone_number) {
+                            setFormErrors((prev) => ({ ...prev, phone_number: '' }));
+                          }
+                        }}
+                        maxLength={7}
+                        inputMode="numeric"
+                        pattern="[0-9]{7}"
+                        style={{ 
+                          flex: 1,
+                          minWidth: 0,
+                          padding: '10px', 
+                          borderRadius: 6, 
+                          border: formErrors.phone_number ? '2px solid red' : '1px solid #ccc', 
+                          fontSize: '0.95rem',
+                          outline: 'none'
+                        }}
+                        placeholder="1234567"
+                      />
+                    </div>
+                    {formErrors.phone_number && <span style={{ color: 'red', fontSize: '0.9rem', fontWeight: 500, marginTop: 4 }}>{formErrors.phone_number}</span>}
+                  </label>
+                </div>
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: 18 }}>
                   <div style={{ fontWeight: 700, color: '#444', fontSize: '1.1rem', letterSpacing: 0.2, flex: 1 }}>SHIPPING ADDRESS</div>
                 </div>
                 {(
                     <form onSubmit={saveAddress} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                      <div className="address-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               {/* Delivery Type Selector at the top of the form */}
               <div style={{ margin: '0 0 18px 0', gridColumn: '1 / -1' }}>
                 <div style={{ fontWeight: 600, color: '#444', marginBottom: 8 }}>Delivery Type<span style={{ color: 'red' }}>*</span></div>
                 <style>{`
-                  @media (max-width: 600px) {
+                  @media (max-width: 768px) {
                     .delivery-type-group {
-                      flex-direction: column !important;
+                      display: grid !important;
+                      grid-template-columns: 1fr 1fr !important;
                       gap: 10px !important;
                     }
                     .delivery-type-radio {
-                      width: 100% !important;
-                      justify-content: flex-start !important;
-                      padding: 12px 10px !important;
-                      font-size: 1.08rem !important;
+                      justify-content: center !important;
+                      padding: 12px 8px !important;
+                      font-size: 0.95rem !important;
+                    }
+                    .delivery-type-radio:last-child {
+                      grid-column: 1 / -1 !important;
                     }
                   }
                 `}</style>
-                <div className="delivery-type-group" style={{ display: 'flex', gap: '16px' }}>
+                <div className="delivery-type-group" style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                   {['Office', 'Home', 'Apartment'].map((type) => (
                     <label
                       key={type}
@@ -491,15 +735,42 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
                 {formErrors.full_name && <span style={{ color: 'red', fontSize: '0.9rem', fontWeight: 500 }}>{formErrors.full_name}</span>}
               </label>
 
-              <label>
+              <label style={{ display: 'flex', flexDirection: 'column', fontWeight: 500, color: '#444', fontSize: '0.95rem' }}>
                 Mobile Number*
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}>
-                  <span style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #ccc', background: '#f7f7f7', fontWeight: 500, fontSize: '1rem', minWidth: 54, textAlign: 'center' }}>+971</span>
+                <div style={{ display: 'flex', gap: '5px', marginTop: '6px', width: '100%' }}>
+                  <div style={{ 
+                    width: '55px',
+                    minWidth: '55px',
+                    flexShrink: 0,
+                    padding: '10px', 
+                    borderRadius: '6px', 
+                    border: '1px solid #ccc', 
+                    background: '#f7f7f7', 
+                    fontWeight: 500, 
+                    fontSize: '1rem', 
+                    textAlign: 'center',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxSizing: 'border-box'
+                  }}>
+                    +971
+                  </div>
                   <select
                     value={formData.shipping.phone_prefix || '50'}
                     onChange={e => onChange({ target: { name: 'phone_prefix', value: e.target.value } }, 'shipping')}
-                    style={{ padding: '8px 6px', borderRadius: 6, border: '1px solid #ccc', fontWeight: 500, fontSize: '1rem', width: 60 }}
-                  >
+                    style={{ 
+                      width: '60px',
+                      minWidth: '60px',
+                      flexShrink: 0,
+                      padding: '10px 5px', 
+                      borderRadius: '6px', 
+                      border: '1px solid #ccc', 
+                      fontWeight: 500, 
+                      fontSize: '1rem', 
+                      background: '#fff',
+                      boxSizing: 'border-box'
+                    }}>
                     <option value="50">50</option>
                     <option value="52">52</option>
                     <option value="54">54</option>
@@ -511,17 +782,14 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
                     type="text"
                     name="phone_number"
                     value={(() => {
-                      // Clean and display only 7 digits
                       let val = (formData.shipping.phone_number || '').toString().replace(/[^0-9]/g, '');
-                      if (val.length > 7) val = val.slice(-7); // Take last 7 digits
-                      return val.slice(0, 7); // Max 7 digits
+                      if (val.length > 7) val = val.slice(-7);
+                      return val.slice(0, 7);
                     })()}
                     onChange={e => {
-                      // Only allow numbers, max 7 digits
                       let val = e.target.value.replace(/[^0-9]/g, '');
-                      val = val.slice(0, 7); // Limit to 7 digits
+                      val = val.slice(0, 7);
                       onChange({ target: { name: 'phone_number', value: val } }, 'shipping');
-                      // Clear error when user starts typing
                       if (formErrors.phone_number) {
                         setFormErrors((prev) => ({ ...prev, phone_number: '' }));
                       }
@@ -530,12 +798,15 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
                     inputMode="numeric"
                     pattern="[0-9]{7}"
                     style={{ 
-                      flex: 1, 
-                      padding: '8px 10px', 
-                      borderRadius: 6, 
+                      flex: 1,
+                      minWidth: 0,
+                      width: '100%',
+                      padding: '10px', 
+                      borderRadius: '6px', 
                       border: formErrors.phone_number ? '2px solid red' : '1px solid #ccc', 
                       fontSize: '1rem',
-                      outline: formErrors.phone_number ? 'none' : 'auto'
+                      outline: 'none',
+                      boxSizing: 'border-box'
                     }}
                     placeholder="1234567"
                   />
@@ -655,7 +926,7 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
 
             {error && <div style={{ color: 'red', fontWeight: 600 }}>{error}</div>}
 
-            <div style={{ display: 'flex', gap: 16, marginTop: 8, marginBottom: 8 }}>
+            <div className="address-modal-buttons" style={{ display: 'flex', gap: 16, marginTop: 8, marginBottom: 8 }}>
               <button
                 type="button"
                 onClick={onClose}
@@ -694,7 +965,6 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
           </form>
         )}
               </div>
-            </div>
           </div>
         </div>
       </div>

@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useAuth } from '../../../../contexts/AuthContext';
 import '../../../../assets/styles/myaccount/addressesSection.css';
 
 const API_BASE = 'https://db.store1920.com/wp-json/wc/v3';
-const CK = 'ck_2e4ba96dde422ed59388a09a139cfee591d98263';
-const CS = 'cs_43b449072b8d7d63345af1b027f2c8026fd15428';
+const CUSTOM_API = 'https://db.store1920.com/wp-json/custom/v1';
+const CK = 'ck_e09e8cedfae42e5d0a37728ad6c3a6ce636695dd';
+const CS = 'cs_2d41bc796c7d410174729ffbc2c230f27d6a1eda';
 
 const AddressesSection = () => {
-  const userId = localStorage.getItem('userId'); // WooCommerce customer ID stored in localStorage
+  const { user } = useAuth();
+  const userId = user?.id; // Get user ID from AuthContext
 
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,19 +47,50 @@ const AddressesSection = () => {
     }
 
     setLoading(true);
+    
+    // Fetch from WooCommerce customer endpoint
     axios
       .get(`${API_BASE}/customers/${userId}`, {
         params: { consumer_key: CK, consumer_secret: CS },
       })
       .then((res) => {
         const customer = res.data;
-        if (customer && customer.billing) {
-          setAddresses([customer.billing]);
-        } else {
-          setAddresses([]);
+        console.log('Customer data loaded:', customer);
+        
+        const addressList = [];
+        
+        // Add billing address if it exists
+        if (customer.billing && customer.billing.address_1) {
+          addressList.push({
+            ...customer.billing,
+            type: 'Billing'
+          });
         }
+        
+        // Add shipping address if it exists and is different from billing
+        if (customer.shipping && customer.shipping.address_1) {
+          const isDifferent = customer.shipping.address_1 !== customer.billing?.address_1 ||
+                             customer.shipping.city !== customer.billing?.city;
+          if (isDifferent) {
+            addressList.push({
+              ...customer.shipping,
+              type: 'Shipping'
+            });
+          } else if (!customer.billing?.address_1) {
+            // If no billing address but shipping exists, show shipping
+            addressList.push({
+              ...customer.shipping,
+              type: 'Shipping'
+            });
+          }
+        }
+        
+        setAddresses(addressList);
       })
-      .catch(() => setAddresses([]))
+      .catch((err) => {
+        console.error('Error loading addresses:', err);
+        setAddresses([]);
+      })
       .finally(() => setLoading(false));
   }, [userId]);
 
@@ -80,40 +114,119 @@ const AddressesSection = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // Validate phone number input in real-time
+    if (name === 'phone') {
+      // Remove all non-digit characters
+      const digitsOnly = value.replace(/[^0-9]/g, '');
+      
+      // Format as UAE number: allow only digits, max 9 digits
+      if (digitsOnly.length <= 9) {
+        setFormData((prev) => ({ ...prev, [name]: digitsOnly }));
+      }
+      return;
+    }
+    
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Save new billing address to WooCommerce
+  // Save new billing address using WooCommerce API
   const handleSave = async () => {
     if (!userId) {
       alert('User not logged in.');
       return;
     }
+    
+    // Validate phone number before saving
+    if (formData.phone) {
+      const phoneDigits = formData.phone.replace(/[^0-9]/g, '');
+      if (phoneDigits.length !== 9) {
+        alert('Phone number must be exactly 9 digits.');
+        return;
+      }
+      if (!phoneDigits.startsWith('5')) {
+        alert('UAE mobile numbers must start with 5.');
+        return;
+      }
+    }
 
     setSaving(true);
 
-    const billingData = {
+    const customerData = {
       billing: {
         first_name: formData.firstName,
         last_name: formData.lastName,
         address_1: formData.street,
         address_2: formData.additional,
         city: formData.city,
-        state: '', // Optional, add if you have this data
+        state: '', 
+        postcode: '',
         country: formData.country,
-        phone: formData.phone,
+        phone: formData.phone ? `+971${formData.phone}` : '',
+        email: user?.email || '',
       },
+      shipping: {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        address_1: formData.street,
+        address_2: formData.additional,
+        city: formData.city,
+        state: '', 
+        postcode: '',
+        country: formData.country,
+      }
     };
 
     try {
-      await axios.put(`${API_BASE}/customers/${userId}`, billingData, {
-        params: { consumer_key: CK, consumer_secret: CS },
-      });
+      console.log('Updating customer address for user ID:', userId);
+      console.log('Customer data:', customerData);
+      
+      // Update customer using WooCommerce API
+      const response = await axios.put(
+        `${API_BASE}/customers/${userId}`,
+        customerData,
+        {
+          params: { consumer_key: CK, consumer_secret: CS },
+        }
+      );
 
+      console.log('Update response:', response.data);
       alert('Address saved successfully.');
 
-      // Update local addresses list
-      setAddresses((prev) => [...prev, billingData.billing]);
+      // Refresh the addresses list
+      const customerRes = await axios.get(`${API_BASE}/customers/${userId}`, {
+        params: { consumer_key: CK, consumer_secret: CS },
+      });
+      
+      if (customerRes.data) {
+        const customer = customerRes.data;
+        const addressList = [];
+        
+        if (customer.billing?.address_1) {
+          addressList.push({
+            ...customer.billing,
+            type: 'Billing'
+          });
+        }
+        
+        if (customer.shipping?.address_1) {
+          const isDifferent = customer.shipping.address_1 !== customer.billing?.address_1 ||
+                             customer.shipping.city !== customer.billing?.city;
+          if (isDifferent) {
+            addressList.push({
+              ...customer.shipping,
+              type: 'Shipping'
+            });
+          } else if (!customer.billing?.address_1) {
+            addressList.push({
+              ...customer.shipping,
+              type: 'Shipping'
+            });
+          }
+        }
+        
+        setAddresses(addressList);
+      }
 
       // Reset form and hide
       setFormData({
@@ -128,8 +241,9 @@ const AddressesSection = () => {
       });
       setShowForm(false);
     } catch (error) {
-      console.error(error);
-      alert('Failed to save address. Please try again.');
+      console.error('Address save error:', error);
+      console.error('Error response:', error.response?.data);
+      alert(`Failed to save address: ${error.response?.data?.message || error.message}`);
     } finally {
       setSaving(false);
     }
@@ -162,17 +276,19 @@ const AddressesSection = () => {
           <div className="address-list">
             {addresses.map((addr, idx) => (
               <div className="address-card" key={idx}>
+                {addr.type && <p className="address-type"><strong>{addr.type} Address</strong></p>}
                 <p><strong>{addr.first_name} {addr.last_name}</strong></p>
                 <p>{addr.address_1}</p>
                 {addr.address_2 && <p>{addr.address_2}</p>}
-                <p>{addr.city}, {addr.state}</p>
+                <p>{addr.city}{addr.state && `, ${addr.state}`}</p>
                 <p>{addr.country}</p>
-                <p>Phone: {addr.phone}</p>
+                {addr.phone && <p>Phone: {addr.phone}</p>}
+                {addr.email && <p>Email: {addr.email}</p>}
               </div>
             ))}
           </div>
           <button className="btn-primary mt-20" onClick={() => setShowForm(true)}>
-            Add Another Address
+            Update Address
           </button>
         </>
       )}
@@ -244,15 +360,35 @@ const AddressesSection = () => {
 
           <label className="input-label">
             Phone Number <span className="required">*</span>
-            <input
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              placeholder="+971 5xxxxxxx"
-              required
-            />
-            <small className="hint">9-digit number starting with 5 for UAE</small>
+            <div style={{ position: 'relative' }}>
+              <span style={{
+                position: 'absolute',
+                left: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: '#666',
+                pointerEvents: 'none',
+              }}>+971</span>
+              <input
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                placeholder="5xxxxxxxx"
+                required
+                pattern="5[0-9]{8}"
+                maxLength="9"
+                style={{ paddingLeft: '50px' }}
+                title="Enter 9-digit UAE mobile number starting with 5"
+              />
+            </div>
+            <small className="hint" style={{ color: formData.phone && (formData.phone.length !== 9 || !formData.phone.startsWith('5')) ? '#e74c3c' : '#666' }}>
+              {formData.phone && formData.phone.length > 0 ? (
+                formData.phone.length !== 9 ? `${formData.phone.length}/9 digits` :
+                !formData.phone.startsWith('5') ? 'Must start with 5' :
+                '✓ Valid UAE number'
+              ) : '9-digit number starting with 5 for UAE'}
+            </small>
           </label>
 
           <fieldset className="whatsapp-fieldset">

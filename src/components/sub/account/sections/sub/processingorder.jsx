@@ -69,7 +69,7 @@ const ProcessingOrders = ({
               }}
             >
               <span>
-                Order ID: <span style={{ color: '#0070f3' }}>PO-{order.id}</span>
+                Order ID: <span style={{ color: '#0070f3' }}>{order.id}</span>
               </span>{' '}
               |{' '}
               <span>
@@ -125,6 +125,15 @@ const ProcessingOrders = ({
                   </div>
                 </div>
               ))}
+            </div>
+
+            <div style={{ marginBottom: 16, fontSize: 14, color: '#666' }}>
+              <div style={{ marginBottom: 4 }}>
+                <strong>Total:</strong> {order.currency} {order.total}
+              </div>
+              <div>
+                <strong>Payment method:</strong> {order.payment_method_title || order.payment_method || 'N/A'}
+              </div>
             </div>
 
             <div style={{ display: 'flex', gap: 12 }}>

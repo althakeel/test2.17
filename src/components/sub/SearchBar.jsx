@@ -4,6 +4,7 @@ import "../../assets/styles/SearchBar.css";
 import { useNavigate } from "react-router-dom";
 import { searchProducts, getTopSoldProducts } from "../../api/woocommerce";
 import { useAuth } from "../../contexts/AuthContext";
+import { trackSearch } from "../../utils/browsingHistory";
 
 import category1 from '../../assets/images/megamenu/Sub catogory Webp/Baby Care & Hygiene copy.webp';
 import Category2 from '../../assets/images/megamenu/Sub catogory Webp/Electronic Toys copy.webp';
@@ -168,6 +169,11 @@ const SearchBar = () => {
 const goToProduct = (slug = null, customLabel = "") => {
   const searchTerm = customLabel || term;
   saveRecentSearch(searchTerm);
+  
+  // Track search for logged-in users
+  if (user && searchTerm) {
+    trackSearch(searchTerm);
+  }
 
   // Do NOT clear term here
   if (slug) navigate(`/product/${slug}`);

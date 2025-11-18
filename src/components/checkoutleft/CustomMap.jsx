@@ -19,13 +19,13 @@ const CustomMap = ({ onPlaceSelected, initialPosition }) => {
   const mapRef = useRef(null);
   const searchBoxRef = useRef(null);
 
-  const [markerPosition, setMarkerPosition] = useState(initialPosition || null);
+  const [markerPosition, setMarkerPosition] = useState(initialPosition || defaultCenter);
   const [manualAddress, setManualAddress] = useState("");
   const [detectedAddress, setDetectedAddress] = useState(null);
   const [showConfirmButton, setShowConfirmButton] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
 
   // Extract address components
-// Extract address components safely
 const extractAddress = (place) => {
   let street = "", city = "", state = "", country = "";
 
@@ -35,11 +35,17 @@ const extractAddress = (place) => {
     const types = c.types;
     if (types.includes("street_number")) street = c.long_name + " ";
     if (types.includes("route")) street += c.long_name;
-    if (types.includes("locality")) city = c.long_name;
-    if (types.includes("administrative_area_level_1")) state = c.short_name;
+    // Prioritize sublocality (area/neighborhood) over locality (city)
+    if (types.includes("sublocality") || types.includes("sublocality_level_1")) {
+      city = c.long_name;
+    } else if (types.includes("locality") && !city) {
+      city = c.long_name;
+    }
+    if (types.includes("administrative_area_level_1")) state = c.long_name; // Changed to long_name for full state name
     if (types.includes("country")) country = c.long_name;
   });
 
+  console.log('Extracted address from map:', { street, city, state, country });
   return { street, city, state, country };
 };
 
@@ -61,36 +67,42 @@ const extractAddress = (place) => {
   };
 
   // Detect user location
-// Detect user location
-// Detect user location
 const detectLocation = () => {
   if (!navigator.geolocation) return alert("Geolocation not supported");
 
-  navigator.geolocation.getCurrentPosition((position) => {
-    const pos = { lat: position.coords.latitude, lng: position.coords.longitude };
-    setMarkerPosition(pos);
-    mapRef.current?.panTo(pos);
+  setIsLocating(true);
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const pos = { lat: position.coords.latitude, lng: position.coords.longitude };
+      setMarkerPosition(pos);
+      mapRef.current?.panTo(pos);
 
-    const geocoder = new window.google.maps.Geocoder();
-    geocoder.geocode({ location: pos }, (results, status) => {
-      let address = { lat: pos.lat, lng: pos.lng };
-      if (status === "OK" && results[0]) {
-        address = { ...extractAddress(results[0]), lat: pos.lat, lng: pos.lng };
-      }
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ location: pos }, (results, status) => {
+        let address = { lat: pos.lat, lng: pos.lng };
+        if (status === "OK" && results[0]) {
+          address = { ...extractAddress(results[0]), lat: pos.lat, lng: pos.lng };
+        }
 
-      setDetectedAddress(address);
-      setShowConfirmButton(false); // 🚫 hide confirm button
-      onPlaceSelected?.(address);  // ✅ auto-pass to parent
-    });
-  });
+        setDetectedAddress(address);
+        setShowConfirmButton(true); // Show "Use this location" button
+        setIsLocating(false);
+      });
+    },
+    (error) => {
+      alert("Unable to get your location. Please enable location services.");
+      setIsLocating(false);
+    }
+  );
 };
 
 
 
 const handleConfirmAddress = () => {
   if (detectedAddress) {
+    console.log('Confirming address:', detectedAddress);
     onPlaceSelected?.(detectedAddress);
-    setShowConfirmButton(false); // hide the button after click
+    setShowConfirmButton(false);
   }
 };
 
@@ -141,6 +153,32 @@ const handleConfirmAddress = () => {
         />
       </StandaloneSearchBox>
 
+      {/* Use This Location Button - appears after search or map click */}
+      {showConfirmButton && (
+        <button
+          onClick={handleConfirmAddress}
+          style={{
+            width: "100%",
+            padding: "10px 16px",
+            backgroundColor: "#1976d2",
+            color: "#fff",
+            border: "none",
+            borderRadius: "8px",
+            fontWeight: 600,
+            fontSize: "0.95rem",
+            cursor: "pointer",
+            boxShadow: "0 2px 8px rgba(25, 118, 210, 0.3)",
+            transition: "all 0.3s",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px"
+          }}
+        >
+          <span>✓</span> Use This Location
+        </button>
+      )}
+
       {/* Map */}
       <div style={{ width: '100%' }}>
         <style>{`
@@ -168,17 +206,32 @@ const handleConfirmAddress = () => {
           center={markerPosition || defaultCenter}
           zoom={markerPosition ? 16 : 11}
           onLoad={(map) => (mapRef.current = map)}
+          onClick={(e) => {
+            const lat = e.latLng.lat();
+            const lng = e.latLng.lng();
+            setMarkerPosition({ lat, lng });
+
+            const geocoder = new window.google.maps.Geocoder();
+            geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+              if (status === "OK" && results[0]) {
+                const address = extractAddress(results[0]);
+                setDetectedAddress({ ...address, lat, lng });
+              } else {
+                setDetectedAddress({ lat, lng });
+              }
+              setShowConfirmButton(true);
+            });
+          }}
         >
-        {markerPosition && (
-          <Marker
-            position={markerPosition}
-            icon={{
-              url: Pin,
-              scaledSize: new window.google.maps.Size(35, 35),
-              anchor: new window.google.maps.Point(17, 35),
-            }}
-            draggable
-            onDragEnd={(e) => {
+        <Marker
+          position={markerPosition}
+          icon={{
+            url: Pin,
+            scaledSize: new window.google.maps.Size(40, 40),
+            anchor: new window.google.maps.Point(20, 40),
+          }}
+          draggable
+          onDragEnd={(e) => {
               const lat = e.latLng.lat();
               const lng = e.latLng.lng();
               setMarkerPosition({ lat, lng });
@@ -195,7 +248,6 @@ const handleConfirmAddress = () => {
               });
             }}
           />
-        )}
         </GoogleMap>
       </div>
 
@@ -203,92 +255,34 @@ const handleConfirmAddress = () => {
       <div
         style={{
           display: "flex",
-          flexWrap: "wrap",
-          gap: "8px",
+          flexDirection: "column",
+          gap: "10px",
           marginTop: "8px",
         }}
       >
         <button
           onClick={detectLocation}
+          disabled={isLocating}
           style={{
-            flex: "1 1 0",
-            minWidth: "120px",
-            padding: "10px 14px",
-            backgroundColor: "#ff5100",
+            width: "100%",
+            padding: "12px 16px",
+            backgroundColor: isLocating ? "#ccc" : "#ff5100",
             color: "#fff",
             border: "none",
             borderRadius: "8px",
-            fontWeight: 500,
-            cursor: "pointer",
+            fontWeight: 600,
+            fontSize: "1rem",
+            cursor: isLocating ? "not-allowed" : "pointer",
+            transition: "all 0.3s",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px"
           }}
         >
-          Detect My Location
-        </button>
-
-      {showConfirmButton && (
-  <button
-    id="confirm-address-btn"
-    onClick={handleConfirmAddress}
-    style={{
-      flex: "1 1 0",
-      minWidth: "120px",
-      padding: "10px 14px",
-      backgroundColor: "#28a745",
-      color: "#fff",
-      border: "none",
-      borderRadius: "8px",
-      fontWeight: 500,
-      cursor: "pointer",
-      animation: "pulse 1s infinite",
-    }}
-  >
-    Use Detected Address
-  </button>
-)}
-{showConfirmButton && (
-  <div style={{ color: "#28a745", fontWeight: 500, marginTop: "8px" }}>
-    Location detected! Click "Use Detected Address" to select it.
-  </div>
-)}
-
-
-        <button
-          onClick={handleManualSubmit}
-          style={{
-            flex: "1 1 0",
-            minWidth: "120px",
-            padding: "10px 14px",
-            backgroundColor: "#007bff",
-            color: "#fff",
-            border: "none",
-            borderRadius: "8px",
-            fontWeight: 500,
-            cursor: "pointer",
-          }}
-        >
-          Use Manual Address
+          {isLocating ? "Locating..." : <><span>📍</span> Locate Me</>}
         </button>
       </div>
-
-      {/* Display detected address */}
-      {detectedAddress && (
-        <div
-          style={{
-            marginTop: "12px",
-            padding: "10px 12px",
-            background: "#f9f9f9",
-            borderRadius: "8px",
-            fontSize: "0.9rem",
-            color: "#333",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-          }}
-        >
-          <strong>Detected Address:</strong>{" "}
-          {detectedAddress.street
-            ? `${detectedAddress.street}, ${detectedAddress.city}, ${detectedAddress.state}, ${detectedAddress.country}`
-            : "Location detected"}
-        </div>
-      )}
     </div>
   );
 };

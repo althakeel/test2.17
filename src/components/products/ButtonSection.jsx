@@ -46,7 +46,7 @@ export default function ButtonSection({ product, selectedVariation, quantity, is
     
     const loadTabbyPromo = () => {
       console.log('Tabby Promo - Loading widget');
-      if (window.TabbyPromo) {
+      if (window.TabbyPromo && typeof window.TabbyPromo === 'function') {
         console.log('Tabby Promo - Initializing with config:', {
           selector: '#TabbyPromo',
           currency: 'AED',
@@ -55,17 +55,21 @@ export default function ButtonSection({ product, selectedVariation, quantity, is
           merchantCode: 'store1920'
         });
         
-        new window.TabbyPromo({
-          selector: '#TabbyPromo',
-          currency: 'AED',
-          price: String(price),
-          lang: 'en',
-          source: 'product',
-          publicKey: 'pk_019a4e3b-c868-29ff-1078-04addad77515',
-          merchantCode: 'store1920'
-        });
+        try {
+          new window.TabbyPromo({
+            selector: '#TabbyPromo',
+            currency: 'AED',
+            price: String(price),
+            lang: 'en',
+            source: 'product',
+            publicKey: 'pk_019a4e3b-c868-29ff-1078-04addad77515',
+            merchantCode: 'store1920'
+          });
+        } catch (error) {
+          console.error('Tabby Promo - Error initializing:', error);
+        }
       } else {
-        console.error('Tabby Promo - window.TabbyPromo not found');
+        console.warn('Tabby Promo - window.TabbyPromo not available or not a constructor');
       }
     };
 
@@ -74,9 +78,10 @@ export default function ButtonSection({ product, selectedVariation, quantity, is
       const script = document.createElement('script');
       script.src = 'https://checkout.tabby.ai/tabby-promo.js';
       script.id = 'tabby-promo-js';
+      script.async = true;
       script.onload = () => {
         console.log('Tabby Promo - Script loaded successfully');
-        loadTabbyPromo();
+        setTimeout(loadTabbyPromo, 100); // Small delay to ensure window.TabbyPromo is available
       };
       script.onerror = () => {
         console.error('Tabby Promo - Failed to load script');
@@ -84,7 +89,7 @@ export default function ButtonSection({ product, selectedVariation, quantity, is
       document.body.appendChild(script);
     } else {
       console.log('Tabby Promo - Script already loaded, reinitializing');
-      loadTabbyPromo();
+      setTimeout(loadTabbyPromo, 100);
     }
 
     return () => {

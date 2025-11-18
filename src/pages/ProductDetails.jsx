@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, Suspense, lazy, useMemo, useRe
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
+import { trackProductView } from '../utils/browsingHistory';
 
 import ProductGallery from '../components/ProductGallery';
 import ProductInfo from '../components/ProductInfo';
@@ -127,6 +128,13 @@ export default function ProductDetails() {
       setExtraImages(imgs);
     }
   }, [variations]);
+
+  // Track product view for logged-in users
+  useEffect(() => {
+    if (product && user) {
+      trackProductView(product);
+    }
+  }, [product, user]);
 
   const combinedImages = useMemo(() => {
     if (!product) return [];
