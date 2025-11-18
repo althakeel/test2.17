@@ -31,15 +31,22 @@ const UAE_CITIES = {
   FSH: ['Fujairah', 'Dibba Al-Fujairah', 'Khor Fakkan', 'Masafi', 'Bidiyah', 'Dibba Al-Hisn', 'Al Aqah', 'Al Bithnah', 'Al Faseel', 'Al Hala', 'Al Madhah', 'Al Sharqiyah', 'Al Sakamkam', 'Al Twar', 'Al Jurf']
 };
 
-const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, cartItems }) => {
+const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, cartItems, initialCoordinates }) => {
   const { user } = useAuth();
   const [formErrors, setFormErrors] = useState({});
-  const [markerPosition, setMarkerPosition] = useState(null);
+  const [markerPosition, setMarkerPosition] = useState(initialCoordinates || null);
   const [mapSelected, setMapSelected] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [loadingSavedAddresses, setLoadingSavedAddresses] = useState(false);
   const [showSavedAddresses, setShowSavedAddresses] = useState(false);
+
+  // Update marker position when initialCoordinates change
+  useEffect(() => {
+    if (initialCoordinates) {
+      setMarkerPosition(initialCoordinates);
+    }
+  }, [initialCoordinates]);
 
 
   // --- City/Area Google Places Autocomplete ---
@@ -271,14 +278,16 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
     // Remove any non-numeric characters
     rawPhone = rawPhone.replace(/[^0-9]/g, '');
     
-    // If phone has country code or prefix already, extract last 7 digits
+    // The phone_number field should only contain the 7-digit number
+    // The prefix is stored separately in phone_prefix
+    // Just ensure it's exactly 7 digits
     if (rawPhone.length > 7) {
-      rawPhone = rawPhone.slice(-7);
+      rawPhone = rawPhone.slice(-7); // Take last 7 digits if somehow longer
     }
     
     const phonePrefix = formData.shipping.phone_prefix || '50';
     
-    console.log('Phone validation:', { rawPhone, length: rawPhone.length, prefix: phonePrefix });
+    console.log('Phone validation:', { rawPhone, length: rawPhone.length, prefix: phonePrefix, fullNumber: `+971${phonePrefix}${rawPhone}` });
     
     // Check if phone_number is exactly 7 digits
     if (!rawPhone || rawPhone.length !== 7) {
@@ -345,8 +354,8 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
         }),
       });
 
-      // If "Save as default" is checked and user is logged in, save to WooCommerce
-      if (formData.saveAsDefault && user?.id) {
+      // Always save to WooCommerce if user is logged in
+      if (user?.id) {
         try {
           await axios.put(
             `${API_BASE}/customers/${user.id}`,
@@ -372,13 +381,14 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
                 state: cleanedFormData.shipping.state || '',
                 postcode: cleanedFormData.shipping.postal_code || '',
                 country: cleanedFormData.shipping.country || 'AE',
+                phone: fullPhone,
               }
             },
             {
               params: { consumer_key: CK, consumer_secret: CS },
             }
           );
-          console.log('Address saved to account successfully');
+          console.log('Address and phone number saved to account successfully');
         } catch (saveError) {
           console.error('Error saving address to account:', saveError);
           // Don't block checkout if saving to account fails
@@ -787,8 +797,17 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
                       let val = e.target.value.replace(/[^0-9]/g, '');
                       val = val.slice(0, 7);
                       onChange({ target: { name: 'phone_number', value: val } }, 'shipping');
-                      if (formErrors.phone_number) {
+                      // Clear error if we now have exactly 7 digits
+                      if (val.length === 7 && formErrors.phone_number) {
                         setFormErrors((prev) => ({ ...prev, phone_number: '' }));
+                      } else if (val.length !== 7 && !formErrors.phone_number) {
+                        // Only show error on blur, not while typing
+                      }
+                    }}
+                    onBlur={e => {
+                      const val = e.target.value.replace(/[^0-9]/g, '');
+                      if (val.length !== 7 && val.length > 0) {
+                        setFormErrors((prev) => ({ ...prev, phone_number: 'Must be exactly 7 digits' }));
                       }
                     }}
                     maxLength={7}

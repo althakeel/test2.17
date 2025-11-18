@@ -73,6 +73,7 @@ export default function CheckoutPage() {
       country: 'AE',
       phone_prefix: '50',
       phone_number: '',
+      delivery_type: 'Home',
     },
     billing: {
       first_name: '',
@@ -157,15 +158,41 @@ useEffect(() => {
     try {
       const customer = await fetchWithAuth(`customers/${user.id}`);
       if (customer) {
-        // Parse phone number from WooCommerce format (+971501234567)
+        // Parse phone number from WooCommerce format (+971543175003)
         const parsePhone = (phoneStr) => {
           if (!phoneStr) return { prefix: '50', number: '' };
-          // Remove + and country code (971)
-          const cleaned = phoneStr.replace(/^\+?971/, '');
-          // First 2 digits are prefix, rest is number
-          const prefix = cleaned.slice(0, 2) || '50';
-          const number = cleaned.slice(2, 9) || ''; // Max 7 digits
-          return { prefix, number };
+          
+          console.log('🔍 Parsing phone from WooCommerce:', phoneStr);
+          
+          // Remove all non-numeric characters
+          const cleaned = phoneStr.replace(/[^0-9]/g, '');
+          console.log('📱 Cleaned phone:', cleaned);
+          
+          // Remove country code if present (971)
+          let withoutCountry = cleaned;
+          if (cleaned.startsWith('971')) {
+            withoutCountry = cleaned.substring(3);
+          }
+          
+          console.log('🌍 Without country code:', withoutCountry, 'length:', withoutCountry.length);
+          
+          // UAE numbers are: prefix (2 digits) + number (7 digits) = 9 digits total
+          // Extract prefix (first 2 digits) and number (next 7 digits)
+          if (withoutCountry.length >= 9) {
+            const prefix = withoutCountry.slice(0, 2);
+            const number = withoutCountry.slice(2, 9); // Take exactly 7 digits
+            console.log('✅ Final parsed result:', { prefix, number, numberLength: number.length, isValid: number.length === 7 });
+            return { prefix, number };
+          } else if (withoutCountry.length >= 2) {
+            // Fallback: if less than 9 digits, try to extract what we have
+            const prefix = withoutCountry.slice(0, 2);
+            const number = withoutCountry.slice(2);
+            console.log('⚠️ Partial phone (less than 9 digits):', { prefix, number, numberLength: number.length });
+            return { prefix, number };
+          } else {
+            console.log('❌ Invalid phone format');
+            return { prefix: '50', number: '' };
+          }
         };
 
         const billingPhone = parsePhone(customer.billing.phone);
@@ -201,6 +228,7 @@ useEffect(() => {
             country: customer.shipping.country || 'AE',
             phone_prefix: shippingPhone.prefix,
             phone_number: shippingPhone.number,
+            delivery_type: 'Home', // Default delivery type
           },
           billingSameAsShipping: true,
           paymentMethod: 'cod',
@@ -208,6 +236,13 @@ useEffect(() => {
           paymentMethodLogo: null,
           shippingMethodId: null,
         };
+
+        console.log('💾 Fetched data with phone:', {
+          shipping: fetchedData.shipping,
+          phone_prefix: fetchedData.shipping.phone_prefix,
+          phone_number: fetchedData.shipping.phone_number,
+          full_phone: `+971${fetchedData.shipping.phone_prefix}${fetchedData.shipping.phone_number}`
+        });
 
         setFormData(fetchedData);
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(fetchedData));
@@ -282,13 +317,14 @@ useEffect(() => {
       const hasAddress = formData?.shipping?.street?.trim();
       const isInitialLoad = !sessionStorage.getItem('justLoggedIn');
       
+      // Only trigger if loading is complete to ensure addresses are fetched first
       if (!hasAddress && !loading && isInitialLoad) {
         setTimeout(() => {
           window.dispatchEvent(new CustomEvent('openAddressForm'));
         }, 500);
       }
     }
-  }, [user, loading]);
+  }, [user, loading, formData.shipping.street]);
 
   // Handle payment redirects
   useEffect(() => {
@@ -572,12 +608,17 @@ return (
           setShowSignInModal(false);
           // Mark that user just logged in (prevents duplicate auto-open)
           sessionStorage.setItem('justLoggedIn', 'true');
-          // Trigger address form to open after sign-in
+          
+          // Only trigger address form if user doesn't have a saved address
+          // Wait longer for address data to load from backend first
           setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('openAddressForm'));
+            const hasAddress = formData?.shipping?.street?.trim();
+            if (!hasAddress) {
+              window.dispatchEvent(new CustomEvent('openAddressForm'));
+            }
             // Clear the flag after a short delay
             setTimeout(() => sessionStorage.removeItem('justLoggedIn'), 1000);
-          }, 300);
+          }, 2000);
         }}
         autoTriggerGoogle={true}
       />
