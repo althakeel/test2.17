@@ -460,8 +460,29 @@ export default function CheckoutRight({ cartItems, formData, createOrder, clearC
       <h2>Order Summary</h2>
 
       <CouponDiscount onApplyCoupon={() => {}} />
+      
+      {/* Coin Redemption */}
+      <CoinBalance 
+        onCoinRedeem={(data) => {
+          console.log('Coins redeemed:', data);
+          setCoinDiscount(data.discountAED || 0);
+          showAlert(`Successfully redeemed ${data.coinsUsed} coins for AED ${data.discountAED} discount!`, 'success');
+        }} 
+      />
 
       <div className="summaryRowCR">
+        <span>Items Total:</span>
+        <span>AED {itemsTotal.toFixed(2)}</span>
+      </div>
+      
+      {coinDiscount > 0 && (
+        <div className="summaryRowCR" style={{ color: '#28a745' }}>
+          <span>Coin Discount:</span>
+          <span>- AED {coinDiscount.toFixed(2)}</span>
+        </div>
+      )}
+      
+      <div className="summaryRowCR" style={{ fontWeight: 'bold', fontSize: '1.1em', marginTop: '10px', borderTop: '1px solid #eee', paddingTop: '10px' }}>
         <span>Total:</span>
         <span>AED {totalWithDelivery.toFixed(2)}</span>
       </div>

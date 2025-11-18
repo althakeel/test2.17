@@ -67,6 +67,7 @@ import CheckoutNavbar from './components/checkout/CheckoutNavbar';
 import MobileBottomNav from './components/MobileBottomNav';
 import MobileNavbar from './components/Mobile/MobileNavbar';
 import ChatBot from './components/sub/Chatbot';
+import SignInModal from './components/sub/SignInModal';
 import CookiePopup from './components/common/CookiePopup';
 import PurchasePopup from './components/common/PurchasePopup';
 import SoundAlert from './assets/sound/alertsound.mp3';
@@ -81,6 +82,7 @@ const AppContent = () => {
   const path = location.pathname;
   const cartIconRef = useRef(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [showAutoSignIn, setShowAutoSignIn] = useState(false);
 
   const CLIENT_ID = "387544567110-hjjhf6sapjq6k35hgoki34kq5c2b6j51.apps.googleusercontent.com";
 
@@ -91,6 +93,24 @@ const AppContent = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Auto-show sign-in popup on homepage for non-logged-in users
+  useEffect(() => {
+    if (path === '/') {
+      const user = localStorage.getItem('user');
+      const hasSeenPopup = sessionStorage.getItem('hasSeenSignInPopup');
+      
+      // Show sign-in popup after 2 seconds if user is not logged in and hasn't seen popup in this session
+      if (!user && !hasSeenPopup) {
+        const timer = setTimeout(() => {
+          setShowAutoSignIn(true);
+          sessionStorage.setItem('hasSeenSignInPopup', 'true');
+        }, 2000);
+        
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [path]);
 
 
   // Notification effect in AppContent
@@ -390,6 +410,19 @@ const AppContent = () => {
 {!path.startsWith('/products/') && !path.startsWith('/checkout') && <CookiePopup />}
        <ChatBot />
 {isHomePage && <NewUserBonusPopup />}
+
+              {/* Auto Sign-In Popup for Homepage */}
+              {showAutoSignIn && (
+                <SignInModal
+                  isOpen={showAutoSignIn}
+                  onClose={() => setShowAutoSignIn(false)}
+                  onLogin={() => {
+                    setShowAutoSignIn(false);
+                    window.location.reload(); // Refresh to update user state
+                  }}
+                />
+              )}
+
               <Footer />
 
            {isMobile &&
