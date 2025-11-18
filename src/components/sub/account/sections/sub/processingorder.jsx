@@ -137,30 +137,6 @@ const ProcessingOrders = ({
             </div>
 
             <div style={{ display: 'flex', gap: 12 }}>
-              <button
-                className="btn-secondary"
-                onClick={() => handleBuyAgain(order.line_items, order.id)}
-                disabled={buyingAgainOrderId === order.id}
-                style={{
-                  flex: 1,
-                  padding: '10px 14px',
-                  backgroundColor: '#0070f3',
-                  border: 'none',
-                  color: '#fff',
-                  borderRadius: 4,
-                  fontWeight: '600',
-                  cursor: buyingAgainOrderId === order.id ? 'not-allowed' : 'pointer',
-                  transition: 'background-color 0.3s ease',
-                }}
-                onMouseEnter={(e) => {
-                  if (!buyingAgainOrderId) e.currentTarget.style.backgroundColor = '#005bb5';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#0070f3';
-                }}
-              >
-                {buyingAgainOrderId === order.id ? 'Adding...' : 'Buy this again'}
-              </button>
               {isCancelable(order.status) && (
                 <button
                   className="btn-secondary"

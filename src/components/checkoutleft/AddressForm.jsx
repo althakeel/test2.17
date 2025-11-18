@@ -664,16 +664,13 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
                   @media (max-width: 768px) {
                     .delivery-type-group {
                       display: grid !important;
-                      grid-template-columns: 1fr 1fr !important;
-                      gap: 10px !important;
+                      grid-template-columns: repeat(3, 1fr) !important;
+                      gap: 8px !important;
                     }
                     .delivery-type-radio {
                       justify-content: center !important;
-                      padding: 12px 8px !important;
-                      font-size: 0.95rem !important;
-                    }
-                    .delivery-type-radio:last-child {
-                      grid-column: 1 / -1 !important;
+                      padding: 10px 6px !important;
+                      font-size: 0.9rem !important;
                     }
                   }
                 `}</style>

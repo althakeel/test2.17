@@ -98,7 +98,7 @@ const OrderDetails = ({ order }) => {
 
         {/* Action Buttons */}
      <div style={styles.buttonsWrapper}>
-  <button
+  {/* <button
     type="button"
     style={styles.actionBtn}
     onClick={() => alert('Track clicked!')}
@@ -106,9 +106,9 @@ const OrderDetails = ({ order }) => {
     onMouseLeave={e => e.currentTarget.style.backgroundColor = '#fff'}
   >
     Track
-  </button>
+  </button> */}
 
-  <button
+  {/* <button
     type="button"
     style={styles.actionBtn}
     onClick={() => alert('Speed up again clicked!')}
@@ -116,7 +116,7 @@ const OrderDetails = ({ order }) => {
     onMouseLeave={e => e.currentTarget.style.backgroundColor = '#fff'}
   >
     Speed up again
-  </button>
+  </button> */}
 
   {/* <button
     type="button"
@@ -128,7 +128,7 @@ const OrderDetails = ({ order }) => {
     Buy this again
   </button> */}
 
-  <button
+  {/* <button
     type="button"
     style={styles.actionBtn}
     onClick={() => {
@@ -157,9 +157,9 @@ const OrderDetails = ({ order }) => {
       <OrderReceiptPrint order={order} />
     </div>
   </div>
-)}
+)} */}
 
-  <button
+  {/* <button
     type="button"
     style={styles.actionBtn}
     onClick={() => alert('Price adjustment clicked!')}
@@ -167,9 +167,9 @@ const OrderDetails = ({ order }) => {
     onMouseLeave={e => e.currentTarget.style.backgroundColor = '#fff'}
   >
     Price adjustment
-  </button>
+  </button> */}
 
-  <button
+  {/* <button
     type="button"
     style={styles.actionBtn}
     onClick={() => alert('Change address clicked!')}
@@ -187,7 +187,7 @@ const OrderDetails = ({ order }) => {
     onMouseLeave={e => e.currentTarget.style.backgroundColor = '#fff'}
   >
     Cancel items
-  </button>
+  </button> */}
 </div>
 
 
@@ -249,11 +249,11 @@ const OrderDetails = ({ order }) => {
               We follow PCI DSS standards, use strong encryption, and perform regular reviews to protect your payment information.
             </div>
 
-            <div style={styles.certifications}>
+            {/* <div style={styles.certifications}>
               {certificationLogos.map((logo, idx) => (
                 <img key={idx} src={logo} alt="certification" style={styles.certLogo} loading="lazy" />
               ))}
-            </div>
+            </div> */}
           </section>
         </div>
       </div>

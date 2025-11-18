@@ -301,7 +301,7 @@ const SignInModal = ({ isOpen, onClose, onLogin, autoTriggerGoogle = false }) =>
             {autoTriggerGoogle ? (
               <>🔐 <strong>Sign in required to proceed with checkout</strong></>
             ) : (
-              <>💡 <strong>Sign in to save your address</strong> or continue as guest</>
+              <>💡 <strong>Sign in to save your address</strong></>
             )}
           </div>
           

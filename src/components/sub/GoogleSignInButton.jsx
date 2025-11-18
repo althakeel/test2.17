@@ -150,11 +150,18 @@ const GoogleSignInButton = React.forwardRef(({ onLogin, onClose }, ref) => {
 
       console.log("🎉 Google Login Success!");
 
-      // Auto-close the sign-in modal
-      onClose?.();
-      
-      // Call onLogin callback
-      onLogin?.(userInfo);
+      // Call onLogin callback first
+      if (onLogin) {
+        onLogin(userInfo);
+      }
+
+      // Auto-close the sign-in modal with a small delay to ensure state updates
+      setTimeout(() => {
+        if (onClose) {
+          console.log("🔵 Closing sign-in modal...");
+          onClose();
+        }
+      }, 300);
 
     } catch (err) {
       console.error("❌ Google Sign-In Error:", err);
@@ -212,15 +219,29 @@ const GoogleSignInButton = React.forwardRef(({ onLogin, onClose }, ref) => {
       ref={ref} 
       onClick={handleGoogleSignIn}
       disabled={isLoading}
-      style={{ opacity: isLoading ? 0.6 : 1, cursor: isLoading ? 'not-allowed' : 'pointer' }}
+      style={{ 
+        opacity: isLoading ? 0.6 : 1, 
+        cursor: isLoading ? 'not-allowed' : 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '8px'
+      }}
     >
       {isLoading ? (
-        <span>⏳</span>
+        <>
+          <span>⏳</span>
+          <span>Signing in...</span>
+        </>
       ) : (
-        <img
-          src={GoogleIcon}
-          alt="Google Sign-In"
-        />
+        <>
+          <img
+            src={GoogleIcon}
+            alt="Google"
+            style={{ width: '20px', height: '20px' }}
+          />
+          <span>Sign in with Google</span>
+        </>
       )}
     </button>
   );

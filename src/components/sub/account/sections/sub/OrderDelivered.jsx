@@ -147,13 +147,6 @@ const OrderDelivered = ({ orders, handleProductClick, slugify, viewOrderDetails 
           {/* Actions */}
           <div className="order-actions-simple" style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 12 }}>
             <button
-              className="btn-secondary"
-              onClick={() => handleBuyAgain(order.line_items, order.id)}
-              disabled={buyingAgainOrderId === order.id}
-            >
-              {buyingAgainOrderId === order.id ? 'Adding...' : 'Buy this again'}
-            </button>
-            <button
               className="btn-outline"
               onClick={() => generateInvoicePDF(order)}
             >

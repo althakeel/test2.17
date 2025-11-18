@@ -1,16 +1,66 @@
 import React, { useEffect, useState } from 'react';
 import '../../assets/styles/checkout/ShippingMethods.css';
 
-const ShippingMethods = ({ selectedMethodId, onSelect }) => {
-  const [methods] = useState([
+// Safely import staticProducts with fallback
+let staticProducts = [];
+try {
+  const staticProductsModule = require('../../data/staticProducts');
+  staticProducts = staticProductsModule.default || staticProductsModule || [];
+} catch (error) {
+  console.warn('Could not load static products data:', error);
+  staticProducts = [];
+}
+
+const ShippingMethods = ({ selectedMethodId, onSelect, cartItems = [] }) => {
+  // Detect if cart has only static products
+  let staticProductIds = [];
+  try {
+    staticProductIds = staticProducts.flatMap(product => {
+      // Get bundle IDs
+      const bundleIds = product.bundles ? product.bundles.map(b => b.id) : [];
+      // Get main product ID
+      const mainId = product.id;
+      // Get variation IDs if they exist
+      const variationIds = product.variations ? product.variations.map(v => v.id) : [];
+      
+      return [mainId, ...bundleIds, ...variationIds].filter(Boolean);
+    });
+  } catch (error) {
+    console.error('Error loading static product IDs:', error);
+    staticProductIds = [];
+  }
+
+  console.log('🔍 Static Product IDs:', staticProductIds);
+  console.log('🛒 Cart Items:', cartItems.map(item => ({ id: item.id, name: item.name })));
+
+  const hasOnlyStaticProducts =
+    cartItems.length > 0 &&
+    staticProductIds.length > 0 &&
+    cartItems.every(item => {
+      const isStatic = staticProductIds.includes(item.id);
+      console.log(`Item ${item.id} (${item.name}) is static:`, isStatic);
+      return isStatic;
+    });
+
+  console.log('✅ Has Only Static Products:', hasOnlyStaticProducts);
+
+  // Set delivery time based on product type - recalculate on every render
+  const deliveryTime = hasOnlyStaticProducts 
+    ? 'Delivered within 2–5 business days'
+    : 'Delivered within 8–12 business days';
+
+  console.log('📦 Delivery Time:', deliveryTime);
+
+  // Create methods dynamically based on current cart
+  const methods = [
     {
       id: 'free_shipping',
       title: 'Free Shipping',
-      description: 'Delivered within 2–5 business days',
+      description: deliveryTime,
       cost: 0,
       eligible: true,
     },
-  ]);
+  ];
 
   // Auto-select Free Shipping by default
   useEffect(() => {
