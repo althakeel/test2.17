@@ -33,6 +33,46 @@ export default function ProductInfo({ product, variations, selectedVariation, on
     setQuantity(1);
   }, [selectedVariation]);
 
+  // Tabby Promo Widget initialization
+  useEffect(() => {
+    const variation = selectedVariation || product;
+    const price = variation?.price || product?.price || "0.00";
+    
+    const loadTabbyPromo = () => {
+      if (window.TabbyPromo && typeof window.TabbyPromo === 'function') {
+        try {
+          new window.TabbyPromo({
+            selector: '#TabbyPromo',
+            currency: 'AED',
+            price: String(price),
+            lang: 'en',
+            source: 'product',
+            publicKey: 'pk_019a4e3b-c868-29ff-1078-04addad77515',
+            merchantCode: 'store1920'
+          });
+        } catch (error) {
+          console.error('Tabby Promo initialization error:', error);
+        }
+      }
+    };
+
+    if (!document.getElementById('tabby-promo-js')) {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.tabby.ai/tabby-promo.js';
+      script.id = 'tabby-promo-js';
+      script.async = true;
+      script.onload = () => setTimeout(loadTabbyPromo, 100);
+      document.body.appendChild(script);
+    } else {
+      setTimeout(loadTabbyPromo, 100);
+    }
+
+    return () => {
+      const target = document.querySelector('#TabbyPromo');
+      if (target) target.innerHTML = '';
+    };
+  }, [selectedVariation, product]);
+
   // Extract brand attribute
   const brandAttribute = product.attributes?.find(attr => {
     if (!attr.name) return false;
