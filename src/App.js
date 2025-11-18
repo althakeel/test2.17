@@ -238,7 +238,17 @@ const AppContent = () => {
   const isSeasonSalePage = path === '/season-sale';
   const onCheckoutPage = path === '/checkout' || path.startsWith('/checkout/');
 
-  const queryClient = new QueryClient();
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnWindowFocus: false,
+        refetchOnMount: false,
+        refetchOnReconnect: false,
+        retry: 1,
+        staleTime: 5 * 60 * 1000,
+      },
+    },
+  });
 
   // Close cart if navigating to excluded paths
   useEffect(() => {
