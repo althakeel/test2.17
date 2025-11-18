@@ -62,9 +62,12 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
     }
   }, [cityInput]);
 
+  // Only set cityInput on initial load, not on every formData change
   useEffect(() => {
-    setCityInput(formData.shipping.city || '');
-  }, [formData.shipping.city]);
+    if (!cityInput && formData.shipping.city) {
+      setCityInput(formData.shipping.city);
+    }
+  }, []);
 
   // --------------------------
   // Load saved address
@@ -75,9 +78,14 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
       try {
         const data = JSON.parse(saved);
         if (data.shipping) {
-          Object.keys(data.shipping).forEach((key) =>
-            onChange({ target: { name: key, value: data.shipping[key] } }, 'shipping')
-          );
+          Object.keys(data.shipping).forEach((key) => {
+            // Always keep phone_number field empty on load
+            if (key === 'phone_number') {
+              onChange({ target: { name: key, value: '' } }, 'shipping');
+            } else {
+              onChange({ target: { name: key, value: data.shipping[key] } }, 'shipping');
+            }
+          });
         }
         if (data.saveAsDefault !== undefined) {
           onChange({ target: { name: 'saveAsDefault', value: data.saveAsDefault } });
@@ -575,11 +583,16 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
                   autoComplete="off"
                   value={cityInput}
                   onChange={e => {
-                    setCityInput(e.target.value);
-                    onChange({ target: { name: 'city', value: e.target.value } }, 'shipping');
+                    const newValue = e.target.value;
+                    setCityInput(newValue);
+                    onChange({ target: { name: 'city', value: newValue } }, 'shipping');
+                    // Clear error when typing
+                    if (formErrors.city) {
+                      setFormErrors((prev) => ({ ...prev, city: '' }));
+                    }
                   }}
                   placeholder="Search your city or area..."
-                  style={{ padding: '10px', fontSize: '1rem', borderRadius: '6px', border: '1px solid #ccc', marginTop: 4 }}
+                  style={{ padding: '10px', fontSize: '1rem', borderRadius: '6px', border: formErrors.city ? '2px solid red' : '1px solid #ccc', marginTop: 4 }}
                 />
                 {cityLoading && <div style={{ position: 'absolute', top: '100%', left: 0, color: '#888', fontSize: '0.95em' }}>Loading...</div>}
                 {citySuggestions.length > 0 && (
