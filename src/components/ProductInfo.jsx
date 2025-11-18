@@ -116,6 +116,10 @@ export default function ProductInfo({ product, variations, selectedVariation, on
     
 
       <PriceDisplay product={product} selectedVariation={selectedVariation} />
+      
+      {/* Tabby Promo Widget */}
+      <div id="TabbyPromo" style={{ margin: '12px 0' }}></div>
+      
       <ProductShortDescription shortDescription={product.short_description} />
 
       {showClearance && clearanceEndTime ? (

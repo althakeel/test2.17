@@ -61,6 +61,25 @@ const UserDropdownMenu = ({
 
   if (!isOpen && !showConfirmModal) return null;
 
+  // Format last login time
+  const formatLastLogin = () => {
+    const lastLogin = localStorage.getItem('lastLogin');
+    if (!lastLogin) return 'Just now';
+    
+    const loginDate = new Date(lastLogin);
+    const now = new Date();
+    const diffMs = now - loginDate;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    return loginDate.toLocaleDateString();
+  };
+
   return (
     <>
       <div
@@ -69,6 +88,16 @@ const UserDropdownMenu = ({
         onMouseLeave={handleMouseLeave}
       >
         <div className="user-dropdown-menu">
+          <div className="dropdown-header" style={{
+            padding: '12px 16px',
+            borderBottom: '1px solid #eee',
+            fontSize: '12px',
+            color: '#666',
+            fontWeight: '500'
+          }}>
+            <div style={{ marginBottom: '4px' }}>{user?.name || user?.email || 'User'}</div>
+            <div style={{ fontSize: '11px', color: '#999' }}>Last login: {formatLastLogin()}</div>
+          </div>
           {menuItems.map((item, idx) => (
             <a key={idx} href={item.link} className="dropdown-item">
               <img src={item.icon} alt={item.label} className="dropdown-icon" />

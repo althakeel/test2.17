@@ -87,7 +87,7 @@ const SignInModal = ({ isOpen, onClose, onLogin, autoTriggerGoogle = false }) =>
   const validateRegister = () => {
     if (!formData.name.trim()) return setErrorMsg("Name is required"), false;
     if (!formData.email.trim()) return setErrorMsg("Email is required"), false;
-    if (!formData.phone.trim()) return setErrorMsg("Phone number is required"), false;
+    // Phone is optional
     if (!formData.password) return setErrorMsg("Password is required"), false;
     if (formData.password !== formData.confirmPassword)
       return setErrorMsg("Passwords do not match"), false;
@@ -109,38 +109,103 @@ const SignInModal = ({ isOpen, onClose, onLogin, autoTriggerGoogle = false }) =>
     setErrorMsg(null);
 
     try {
-      const res = await axios.post(`${WP_API}/custom/v1/register`, {
+      // Use custom WordPress endpoint (no OTP, no WooCommerce)
+      console.log('🔵 Registering user...');
+      const res = await axios.post(`${WP_API}/custom/v1/register-no-otp`, {
         name: formData.name,
         email: formData.email,
         password: formData.password,
-        phone: formData.phone,
+        phone: formData.phone || '',
       });
+      console.log('✅ Registration response:', res.data);
 
+      // Auto-login with custom endpoint to bypass OTP
+      try {
+        console.log('🔵 Auto-logging in with username:', res.data.username);
+        const loginRes = await axios.post(`${WP_API}/custom/v1/login-no-otp`, {
+          username: res.data.username, // Use username from registration
+          password: formData.password,
+        });
+        console.log('✅ Login response:', loginRes.data);
+
+        if (loginRes.data?.token) {
+          const lastLogin = new Date().toISOString();
+          const userInfo = {
+            name: formData.name,
+            image: "",
+            token: loginRes.data.token,
+            id: res.data.user_id || res.data.id,
+            email: formData.email,
+            user: res.data,
+            lastLogin: lastLogin,
+          };
+          login(userInfo);
+          localStorage.setItem("userId", userInfo.id);
+          localStorage.setItem("email", userInfo.email);
+          localStorage.setItem("token", userInfo.token);
+          localStorage.setItem("lastLogin", lastLogin);
+          onLogin?.(userInfo);
+          onClose();
+          setLoading(false);
+          return;
+        }
+      } catch (loginErr) {
+        console.error('Auto-login failed:', loginErr);
+        // If auto-login fails, show message and switch to login form
+      }
+
+      // Fallback: If auto-login failed, switch to login form
+      setIsRegister(false);
+      setFormData({
+        name: "",
+        email: formData.email,
+        password: "",
+        confirmPassword: "",
+        phone: "",
+      });
+      setErrorMsg(null);
+      setTimeout(() => {
+        setErrorMsg("✅ Registration successful! Please sign in with Google.");
+      }, 100);
+      setLoading(false);
+      return;
+
+      /* DISABLED AUTO-LOGIN DUE TO OTP PLUGIN
+      // Now login with the new account
+      console.log('🔵 Logging in with:', formData.email);
       const loginRes = await axios.post(`${WP_API}/jwt-auth/v1/token`, {
         username: formData.email,
         password: formData.password,
       });
+      console.log('✅ Login response:', loginRes.data);
 
       if (loginRes.data?.token) {
+        const lastLogin = new Date().toISOString();
         const userInfo = {
           name: formData.name,
           image: "",
           token: loginRes.data.token,
-          id: res.data.id || res.data.user_id,
+          id: res.data.user_id || res.data.id,
           email: formData.email,
           user: res.data,
+          lastLogin: lastLogin,
         };
         login(userInfo);
         localStorage.setItem("userId", userInfo.id);
         localStorage.setItem("email", userInfo.email);
         localStorage.setItem("token", userInfo.token);
+        localStorage.setItem("lastLogin", lastLogin);
         onLogin?.(userInfo);
         onClose();
       } else {
         setErrorMsg("Login failed after registration");
       }
+      */
     } catch (err) {
-      setErrorMsg(parseErrorMsg(err.response?.data?.message || "Registration failed"));
+      console.error('❌ Registration/Login Error:', err);
+      console.error('Response data:', err.response?.data);
+      const errorMessage = err.response?.data?.message || err.response?.data?.code || err.message || "Registration failed";
+      setErrorMsg(parseErrorMsg(errorMessage));
     } finally {
       setLoading(false);
     }
@@ -152,36 +217,43 @@ const SignInModal = ({ isOpen, onClose, onLogin, autoTriggerGoogle = false }) =>
     setErrorMsg(null);
 
     try {
-      const res = await axios.post(`${WP_API}/jwt-auth/v1/token`, {
+      // Use custom login endpoint to bypass OTP
+      const res = await axios.post(`${WP_API}/custom/v1/login-no-otp`, {
         username: formData.email,
         password: formData.password,
       });
 
       if (res.data?.token) {
-        const profileRes = await axios.get(`${WP_API}/wp/v2/users/me`, {
-          headers: { Authorization: `Bearer ${res.data.token}` },
-        });
-
+        const lastLogin = new Date().toISOString();
         const userInfo = {
-          name: profileRes.data.name || formData.email,
+          name: res.data.user_display_name || formData.email,
           image: "",
           token: res.data.token,
-          id: profileRes.data.id,
+          id: res.data.user_id || res.data.id,
           email: formData.email,
-          user: profileRes.data,
+          user: res.data,
+          lastLogin: lastLogin,
         };
 
         login(userInfo);
         localStorage.setItem("userId", userInfo.id);
         localStorage.setItem("email", userInfo.email);
         localStorage.setItem("token", userInfo.token);
+        localStorage.setItem("lastLogin", lastLogin);
         onLogin?.(userInfo);
         onClose();
       } else {
         setErrorMsg("Invalid login credentials");
       }
     } catch (err) {
-      setErrorMsg(parseErrorMsg(err.response?.data?.message || "Login failed"));
+      // Check if it's the OTP error
+      const errorMsg = err.response?.data?.message || err.response?.data?.code || "Login failed";
+      
+      if (errorMsg.includes('OTP') || errorMsg.includes('otp')) {
+        setErrorMsg("⚠️ Email login temporarily unavailable. Please use Google Sign-In below.");
+      } else {
+        setErrorMsg(parseErrorMsg(errorMsg));
+      }
     } finally {
       setLoading(false);
     }
@@ -248,6 +320,28 @@ const SignInModal = ({ isOpen, onClose, onLogin, autoTriggerGoogle = false }) =>
 
         <form className="signin-modal-form" onSubmit={handleSubmit} noValidate>
           {errorMsg && <Alert onClose={() => setErrorMsg(null)}>{errorMsg}</Alert>}
+
+          {isRegister && (
+            <>
+              <input
+                type="text"
+                name="name"
+                placeholder="Full Name"
+                value={formData.name}
+                onChange={handleChange}
+                className="signin-modal-input"
+                required
+              />
+              <input
+                type="tel"
+                name="phone"
+                placeholder="Phone Number (Optional)"
+                value={formData.phone}
+                onChange={handleChange}
+                className="signin-modal-input"
+              />
+            </>
+          )}
 
           <input
             type="text"
@@ -342,18 +436,7 @@ const SignInModal = ({ isOpen, onClose, onLogin, autoTriggerGoogle = false }) =>
             }}
           />
 
-          <button onClick={() => handleSocialLogin("facebook")}>
-            <img src={FacebookIcon} alt="Facebook" />
-          </button>
-
-          <button disabled>
-            <img
-              src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg"
-              alt="Apple"
-              width="30px"
-              height="50px"
-            />
-          </button>
+          {/* Facebook and Apple Pay buttons hidden */}
         </div>
 
         <div className="signin-terms">

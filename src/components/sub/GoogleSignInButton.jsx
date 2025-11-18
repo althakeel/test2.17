@@ -53,6 +53,7 @@ const GoogleSignInButton = React.forwardRef(({ onLogin, onClose }, ref) => {
       console.log("✅ WordPress response:", res.data);
 
       // The backend ALWAYS returns correct WP user_id
+      const lastLogin = new Date().toISOString();
       const userInfo = {
         id: res.data.user_id,        // IMPORTANT (WP ID)
         email: res.data.email,
@@ -62,10 +63,12 @@ const GoogleSignInButton = React.forwardRef(({ onLogin, onClose }, ref) => {
         firebaseUid: userData.firebase_uid,
         billing: res.data.billing,   // Address data
         shipping: res.data.shipping, // Address data
+        lastLogin: lastLogin,
       };
 
       // Save to context + localStorage
       login(userInfo);
+      localStorage.setItem('lastLogin', lastLogin);
       
       // Save addresses to localStorage for checkout
       if (res.data.billing || res.data.shipping) {

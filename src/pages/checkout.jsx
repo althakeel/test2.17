@@ -100,7 +100,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(true);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [showSignInModal, setShowSignInModal] = useState(!user); // Show immediately if not logged in
-  const [shouldCheckAddress, setShouldCheckAddress] = useState(false);
+  const [shouldOpenAddressForm, setShouldOpenAddressForm] = useState(false);
   const [alert, setAlert] = useState({ message: '', type: 'info' });
   const [error, setError] = useState('');
 
@@ -276,8 +276,19 @@ useEffect(() => {
     } else {
       // User is logged in, hide modal
       setShowSignInModal(false);
+      
+      // ONLY auto-open address form if already logged in on page load
+      // (not after just signing in - that's handled by onLogin callback)
+      const hasAddress = formData?.shipping?.street?.trim();
+      const isInitialLoad = !sessionStorage.getItem('justLoggedIn');
+      
+      if (!hasAddress && !loading && isInitialLoad) {
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('openAddressForm'));
+        }, 500);
+      }
     }
-  }, [user]);
+  }, [user, loading]);
 
   // Handle payment redirects
   useEffect(() => {
@@ -559,9 +570,14 @@ return (
         }}
         onLogin={(userInfo) => {
           setShowSignInModal(false);
-          setShouldCheckAddress(false);
-          showAlert('Welcome! Please fill in your delivery address below.', 'success');
-          // Page will auto-reload addresses from context
+          // Mark that user just logged in (prevents duplicate auto-open)
+          sessionStorage.setItem('justLoggedIn', 'true');
+          // Trigger address form to open after sign-in
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('openAddressForm'));
+            // Clear the flag after a short delay
+            setTimeout(() => sessionStorage.removeItem('justLoggedIn'), 1000);
+          }, 300);
         }}
         autoTriggerGoogle={true}
       />

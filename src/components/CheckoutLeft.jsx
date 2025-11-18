@@ -74,27 +74,6 @@ export default function CheckoutLeft({
   };
 
   // -------------------------------
-  // Auto-open form if no shipping address (delayed to allow sign-in popup first)
-  // -------------------------------
-  useEffect(() => {
-    const hasShownSignInPopup = sessionStorage.getItem('checkoutSignInSuggestionShown');
-    const hasAddress = formData?.shipping?.street?.trim() &&
-                       formData?.shipping?.first_name?.trim() &&
-                       formData?.shipping?.last_name?.trim();
-    
-    // Only auto-open if no sign-in popup was shown, or after a delay
-    if (!hasAddress) {
-      if (hasShownSignInPopup === 'true') {
-        // If sign-in popup was shown before, don't auto-open (wait for event trigger)
-        // Do nothing - the event listener will handle it
-      } else {
-        // No sign-in popup in this session, open form immediately
-        setShowForm(true);
-      }
-    }
-  }, []);
-
-  // -------------------------------
   // Listen for external trigger to open address form
   // -------------------------------
   useEffect(() => {
