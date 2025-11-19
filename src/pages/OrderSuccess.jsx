@@ -46,7 +46,7 @@ export default function OrderSuccess() {
 
   const [animate, setAnimate] = useState(false);
   const [order, setOrder] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Changed to false - no loading spinner
   const { clearCart } = useCart();
   
   useEffect(() => {
@@ -57,13 +57,10 @@ export default function OrderSuccess() {
   useEffect(() => {
     async function fetchOrder() {
       if (!orderId) {
-        setLoading(false);
         return;
       }
-      setLoading(true);
       const data = await getOrderById(orderId);
       setOrder(data);
-      setLoading(false);
     }
     fetchOrder();
   }, [orderId]);
@@ -99,17 +96,48 @@ export default function OrderSuccess() {
     navigate(`/search?q=${encodeURIComponent(term)}`);
   };
 
-  if (loading) {
-    return (
-      <div className="order-success-container">
-        <div className="order-success-card">
-          <div className="loading-spinner">Loading order details...</div>
-        </div>
-      </div>
-    );
-  }
+  // Show loader for 2 seconds before showing 'Order not found'
+  const [notFoundLoading, setNotFoundLoading] = useState(false);
+  useEffect(() => {
+    if (!orderId || !order) {
+      setNotFoundLoading(true);
+      const timer = setTimeout(() => setNotFoundLoading(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [orderId, order]);
 
-  if (!order || !orderId) {
+  if (!orderId || !order) {
+    if (notFoundLoading) {
+      return (
+        <div className="order-success-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', background: 'rgba(255,255,255,0.95)', transition: 'background 0.3s' }}>
+          <style>{`
+            .modern-spinner {
+              width: 48px;
+              height: 48px;
+              border: 5px solid #eee;
+              border-top: 5px solid #ff5100;
+              border-radius: 50%;
+              animation: modern-spin 0.8s linear infinite;
+              margin: 0 auto;
+            }
+            @keyframes modern-spin {
+              to { transform: rotate(360deg); }
+            }
+            .fade-in-loader {
+              animation: fadeIn 0.5s;
+            }
+            @keyframes fadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+          `}</style>
+          <div className="order-success-card fade-in-loader" style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.08)', borderRadius: '16px', padding: '48px 32px', background: '#fff', textAlign: 'center' }}>
+            <div className="modern-spinner"></div>
+            <div style={{ marginTop: '18px', fontSize: '1.1rem', color: '#ff5100', fontWeight: 500 }}>Loading your order...</div>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="order-success-container">
         <div className="order-success-card">
@@ -143,7 +171,7 @@ export default function OrderSuccess() {
           <div className="order-info-grid">
             <div className="info-item">
               <span className="info-label">Order date:</span>
-              <span className="info-value">{new Date(order.date_created).toLocaleDateString('en-GB')}</span>
+              <span className="info-value">{order?.date_created ? new Date(order.date_created).toLocaleDateString('en-GB') : '-'}</span>
             </div>
             <div className="info-item">
               <span className="info-label">Status:</span>
@@ -151,7 +179,7 @@ export default function OrderSuccess() {
             </div>
             <div className="info-item">
               <span className="info-label">Payment method:</span>
-              <span className="info-value">{order.payment_method_title || 'COD'}</span>
+              <span className="info-value">{order?.payment_method_title || 'COD'}</span>
             </div>
           </div>
 
@@ -240,7 +268,7 @@ export default function OrderSuccess() {
           </div>
           <div className="info-item">
             <span className="info-label">Payment method:</span>
-            <span className="info-value">{order.payment_method_title || 'COD'}</span>
+            <span className="info-value">{order.payment_method_title || order.payment_method || 'N/A'}</span>
           </div>
         </div>
 
@@ -298,12 +326,7 @@ export default function OrderSuccess() {
               <span className="summary-value"></span>
             </div>
             
-            {order.shipping_total && parseFloat(order.shipping_total) > 0 && (
-              <div className="summary-row">
-                <span className="summary-label">Shipping & handling</span>
-                <span className="summary-value">{formatPrice(order.shipping_total)}</span>
-              </div>
-            )}
+            {/* Shipping & handling removed as requested */}
             
             <div className="summary-row total-row">
               <span className="summary-label">Total</span>

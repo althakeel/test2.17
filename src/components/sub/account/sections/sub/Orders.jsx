@@ -38,9 +38,33 @@ const AllOrders = ({
   const [addressError, setAddressError] = useState('');
   const [trackingOrder, setTrackingOrder] = useState(null);
   const [detailedOrder, setDetailedOrder] = useState(null);
+  const [submittedRequests, setSubmittedRequests] = useState({});
+
+  // Fetch submitted requests for current user by email
+  React.useEffect(() => {
+    const fetchRequests = async () => {
+      try {
+        const userEmail = orders?.find(o => o.billing?.email)?.billing?.email;
+        if (!userEmail) return;
+        const res = await axios.get(`https://db.store1920.com/wp-json/custom/v1/list-return-requests?email=${encodeURIComponent(userEmail)}`);
+        if (res.data && res.data.requests) {
+          const map = {};
+          res.data.requests.forEach((req) => {
+            if (req.order_id) map[String(req.order_id)] = req;
+          });
+          setSubmittedRequests(map);
+        }
+      } catch (err) {
+        // Ignore errors for now
+      }
+    };
+    fetchRequests();
+  }, [orders]);
   const [returningOrder, setReturningOrder] = useState(null);
-  const [selectedReason, setSelectedReason] = useState('');
-  const [otherReason, setOtherReason] = useState('');
+  const [returnType, setReturnType] = useState('Return');
+  const [reason, setReason] = useState('');
+  const [comments, setComments] = useState('');
+  const [images, setImages] = useState([]);
 
   const { addToCart } = useCart();
 
@@ -211,18 +235,28 @@ const AllOrders = ({
 
   const handleReturnProduct = async () => {
     if (!returningOrder) return;
-    const reason = selectedReason === 'Other' ? otherReason : selectedReason;
-    if (!reason) return toast.error('Please select or enter a reason');
+    if (!reason) return toast.error('Please enter a reason');
+    const formData = new FormData();
+    formData.append('order_id', returningOrder.id);
+    formData.append('type', returnType);
+    formData.append('reason', reason);
+    formData.append('comments', comments);
+    if (images && images.length > 0) {
+      for (let i = 0; i < images.length; i++) {
+        formData.append('images[]', images[i]);
+      }
+    }
     try {
-      const res = await axios.post('/wp-json/custom/v1/return-order/', {
-        order_id: returningOrder.id,
-        reason,
+      const res = await axios.post('/wp-json/custom/v1/return-order/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
       if (res.data.success) {
         toast.success('Return request submitted!');
         setReturningOrder(null);
-        setSelectedReason('');
-        setOtherReason('');
+        setReturnType('Return');
+        setReason('');
+        setComments('');
+        setImages([]);
       } else {
         toast.error('Failed to submit return request');
       }
@@ -270,39 +304,57 @@ const AllOrders = ({
       {returningOrder && (
         <div className="return-modal-overlay">
           <div className="return-modal">
-            <h2>Return Product - PO-{returningOrder.id}</h2>
-            <p>Please select a reason for returning this product:</p>
-
-            <div className="return-reasons">
-              <select
-                value={selectedReason}
-                onChange={(e) => setSelectedReason(e.target.value)}
-              >
-                <option value="">-- Select a reason --</option>
-                {returnReasons.map((r, i) => (
-                  <option key={i} value={r}>
-                    {r}
-                  </option>
-                ))}
+            <h2>Return / Replacement Request<br />PO-{returningOrder.id}</h2>
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ fontWeight: 'bold' }}>Type:</label>
+              <select value={returnType} onChange={e => setReturnType(e.target.value)} style={{ marginLeft: 8 }}>
+                <option value="Return">Return</option>
+                <option value="Replacement">Replacement</option>
               </select>
-
-              {selectedReason === 'Other' && (
-                <input
-                  type="text"
-                  placeholder="Enter your reason"
-                  value={otherReason}
-                  onChange={(e) => setOtherReason(e.target.value)}
-                />
-              )}
             </div>
-
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ fontWeight: 'bold' }}>Reason:</label>
+              <input
+                type="text"
+                placeholder="Reason (e.g. Damaged, Wrong item)"
+                value={reason}
+                onChange={e => setReason(e.target.value)}
+                style={{ width: '100%', marginTop: 4 }}
+              />
+            </div>
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ fontWeight: 'bold' }}>Comments:</label>
+              <textarea
+                placeholder="Additional comments (optional)"
+                value={comments}
+                onChange={e => setComments(e.target.value)}
+                style={{ width: '100%', marginTop: 4 }}
+                rows={3}
+              />
+            </div>
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ fontWeight: 'bold' }}>Upload Images (optional):</label>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={e => setImages(Array.from(e.target.files))}
+                style={{ marginTop: 4 }}
+              />
+            </div>
             <div className="return-modal-actions">
               <button className="btn-primary" onClick={handleReturnProduct}>
-                Submit Return
+                Submit Request
               </button>
               <button
                 className="btn-secondary"
-                onClick={() => setReturningOrder(null)}
+                onClick={() => {
+                  setReturningOrder(null);
+                  setReturnType('Return');
+                  setReason('');
+                  setComments('');
+                  setImages([]);
+                }}
               >
                 Cancel
               </button>
@@ -317,27 +369,31 @@ const AllOrders = ({
           
           {order.status === 'cancelled' && (
             <div className="cancelled-overlay">
-                  <div className="cancel-text-box">
-              <div className="cancel-info-title">Order Cancelled</div>
-              <div>
-                <strong>Cancelled by:</strong> {order.cancelled_by?.toLowerCase() === 'customer' ? 'Customer' : 'Seller'}
-              </div>
-              <div>
-                <strong>Order Date:</strong> {new Date(order.date_created).toLocaleDateString()}
-              </div>
-              {order.date_cancelled && (
+              <div className="cancel-text-box">
+                <div className="cancel-info-title">Order Cancelled</div>
                 <div>
-                  <strong>Cancelled Date:</strong> {new Date(order.date_cancelled).toLocaleDateString()}
+                  <strong>Cancelled by:</strong> {
+                    order.cancelled_by?.toLowerCase() === 'customer'
+                      ? (order.billing?.first_name ? `${order.billing.first_name} ${order.billing.last_name}` : 'Customer')
+                      : 'Seller'
+                  }
                 </div>
-              )}
+                <div>
+                  <strong>Order Date:</strong> {new Date(order.date_created).toLocaleDateString()}
+                </div>
+                {order.date_cancelled && (
+                  <div>
+                    <strong>Cancelled Date:</strong> {new Date(order.date_cancelled).toLocaleDateString()}
                   </div>
+                )}
+              </div>
             </div>
           )}
 
           <div className="order-header-simple">
             <div>
-              <strong style={{ color: orderStatusColors[order.status] || '#000' }}>
-                Order {orderStatusLabels[order.status] || order.status}
+              <strong style={{ color: submittedRequests && submittedRequests[String(order.id)] ? '#856404' : (orderStatusColors[order.status] || '#000') }}>
+                Order {submittedRequests && submittedRequests[String(order.id)] ? 'Requested' : (orderStatusLabels[order.status] || order.status)}
               </strong> | Email sent to <span>{order.billing.email}</span> on{' '}
               {new Date(order.date_created).toLocaleDateString()}
             </div>
@@ -373,10 +429,6 @@ const AllOrders = ({
               <div
                 key={item.id}
                 className="order-product-simple"
-                onClick={() => handleProductClick(slugify(item.name))}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleProductClick(slugify(item.name)); }}
               >
                 <img src={item.image?.src || 'https://via.placeholder.com/100'} alt={item.name} />
                 <div className="product-price">{order.currency} {item.price}</div>
@@ -390,28 +442,16 @@ const AllOrders = ({
               <del>{order.currency} {order.total}</del>&nbsp;
               <strong>{order.currency} {order.total}</strong>
             </div>
-            <div>
-              Order Time:{' '}
-              {new Intl.DateTimeFormat('en-GB', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false,
-                timeZone: 'Asia/Dubai',
-              }).format(new Date(order.date_created))}
-            </div>
+            {order.shipping_total && parseFloat(order.shipping_total) > 0 && (
+              <div>Shipping & handling: {order.currency} {order.shipping_total}</div>
+            )}
+            {/* ...existing code... */}
             <div>Order ID:{order.id}</div>
-            <div>Payment method: {order.payment_method_title || order.payment_method}</div>
+            <div>Payment method: {order.payment_method_title || order.payment_method || 'N/A'}</div>
           </div>
 
           <div className="order-actions-simple">
             <button className="btn-outline" onClick={() => openEditAddress(order)}>Change address</button>
-            <button className="btn-secondary" onClick={() => handleBuyAgain(order.line_items, order.id)} disabled={buyingAgainOrderId === order.id}>
-              {buyingAgainOrderId === order.id ? 'Adding...' : 'Buy this again'}
-            </button>
             <button className="btn-secondary" onClick={() => setTrackingOrder(order)}>Track</button>
             {isCancelable(order.status) && (
               <button className="btn-secondary" onClick={() => cancelOrder(order.id)} disabled={cancellingOrderId === order.id}>

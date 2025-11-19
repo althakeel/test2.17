@@ -110,7 +110,7 @@ const SignInModal = ({ isOpen, onClose, onLogin, autoTriggerGoogle = false }) =>
 
     try {
       // Use custom WordPress endpoint (no OTP, no WooCommerce)
-      console.log('🔵 Registering user...');
+      console.log('🔵 Registering user...', { email: formData.email, name: formData.name });
       const res = await axios.post(`${WP_API}/custom/v1/register-no-otp`, {
         name: formData.name,
         email: formData.email,
@@ -119,13 +119,26 @@ const SignInModal = ({ isOpen, onClose, onLogin, autoTriggerGoogle = false }) =>
       });
       console.log('✅ Registration response:', res.data);
 
-      // Auto-login with custom endpoint to bypass OTP
+      // Auto-login immediately after registration - try with email first, then username
       try {
-        console.log('🔵 Auto-logging in with username:', res.data.username);
-        const loginRes = await axios.post(`${WP_API}/custom/v1/login-no-otp`, {
-          username: res.data.username, // Use username from registration
-          password: formData.password,
-        });
+        console.log('🔵 Auto-logging in with email:', formData.email);
+        let loginRes;
+        
+        // Try login with email
+        try {
+          loginRes = await axios.post(`${WP_API}/custom/v1/login-no-otp`, {
+            username: formData.email,
+            password: formData.password,
+          });
+        } catch (emailLoginErr) {
+          // If email login fails, try with username
+          console.log('🔵 Email login failed, trying with username:', res.data.username);
+          loginRes = await axios.post(`${WP_API}/custom/v1/login-no-otp`, {
+            username: res.data.username,
+            password: formData.password,
+          });
+        }
+        
         console.log('✅ Login response:', loginRes.data);
 
         if (loginRes.data?.token) {
@@ -139,22 +152,57 @@ const SignInModal = ({ isOpen, onClose, onLogin, autoTriggerGoogle = false }) =>
             user: res.data,
             lastLogin: lastLogin,
           };
+          
+          console.log('✅ Logging in user:', userInfo);
+          
+          // Login and save to localStorage
           login(userInfo);
-          localStorage.setItem("userId", userInfo.id);
+          localStorage.setItem("userId", String(userInfo.id));
           localStorage.setItem("email", userInfo.email);
           localStorage.setItem("token", userInfo.token);
           localStorage.setItem("lastLogin", lastLogin);
-          onLogin?.(userInfo);
-          onClose();
+          
+          // Clear form
+          setFormData({
+            name: "",
+            email: "",
+            password: "",
+            confirmPassword: "",
+            phone: "",
+          });
+          
+          // Show success message briefly then close
+          setErrorMsg("✅ Welcome to Store1920! Your account has been created.");
+          
+          setTimeout(() => {
+            onLogin?.(userInfo);
+            onClose();
+          }, 1000);
+          
           setLoading(false);
           return;
+        } else {
+          throw new Error('No token received from login');
         }
       } catch (loginErr) {
-        console.error('Auto-login failed:', loginErr);
-        // If auto-login fails, show message and switch to login form
+        console.error('❌ Auto-login failed:', loginErr);
+        console.error('Login error details:', loginErr.response?.data);
+        
+        // If auto-login fails completely, show success but ask to sign in
+        setErrorMsg("✅ Registration successful! Please sign in with your email and password.");
+        setIsRegister(false);
+        setFormData({
+          name: "",
+          email: formData.email,
+          password: "",
+          confirmPassword: "",
+          phone: "",
+        });
+        setLoading(false);
+        return;
       }
 
-      // Fallback: If auto-login failed, switch to login form
+      // This should not be reached if auto-login succeeds
       setIsRegister(false);
       setFormData({
         name: "",
@@ -165,7 +213,7 @@ const SignInModal = ({ isOpen, onClose, onLogin, autoTriggerGoogle = false }) =>
       });
       setErrorMsg(null);
       setTimeout(() => {
-        setErrorMsg("✅ Registration successful! Please sign in with Google.");
+        setErrorMsg("✅ Registration successful! Please sign in.");
       }, 100);
       setLoading(false);
       return;

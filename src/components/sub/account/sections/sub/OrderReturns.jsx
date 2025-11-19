@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import { useCart } from '../../../../../contexts/CartContext';
 import 'react-toastify/dist/ReactToastify.css';
@@ -24,7 +24,26 @@ const OrderReturns = ({ orders, handleProductClick, slugify, isCancelable, cance
   const [returningOrder, setReturningOrder] = useState(null);
   const [selectedReason, setSelectedReason] = useState('');
   const [otherReason, setOtherReason] = useState('');
+  const [requests, setRequests] = useState([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
   const { addToCart } = useCart();
+
+  // Get user email from first order (or context if available)
+  const userEmail = orders?.[0]?.billing?.email || '';
+
+  useEffect(() => {
+    if (!userEmail) return;
+    setLoadingRequests(true);
+    axios
+      .get(`/wp-json/custom/v1/list-return-requests?email=${encodeURIComponent(userEmail)}`)
+      .then((res) => {
+        setRequests(res.data?.requests || []);
+      })
+      .catch(() => {
+        toast.error('Failed to fetch return/replacement requests');
+      })
+      .finally(() => setLoadingRequests(false));
+  }, [userEmail]);
 
   const orderStatusLabels = {
     refunded: 'Refunded',
@@ -87,11 +106,59 @@ const OrderReturns = ({ orders, handleProductClick, slugify, isCancelable, cance
     (order) => order.status === 'refunded' || (order.refunds && order.refunds.length > 0)
   );
 
-  if (!returnedOrders.length) return <p>No returned orders found.</p>;
+
+  // Render backend requests section
+  const renderRequestsSection = () => (
+    <div className="backend-requests-list" style={{ marginBottom: 32 }}>
+      <h2 style={{ fontSize: 20, marginBottom: 12 }}>Return & Replacement Requests</h2>
+      {loadingRequests ? (
+        <div>Loading requests...</div>
+      ) : requests.length === 0 ? (
+        <div>No return/replacement requests found.</div>
+      ) : (
+        requests.map((req) => {
+          const images = Array.isArray(req.images) ? req.images : (req.images ? JSON.parse(req.images) : []);
+          return (
+            <div key={req.id} className="request-card-simple" style={{ border: '1px solid #eee', borderRadius: 8, padding: 16, marginBottom: 18, background: '#fff' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <div>
+                  <strong>Type:</strong> <span style={{ color: req.request_type === 'Return' ? '#856404' : '#0c5460' }}>{req.request_type}</span>
+                  {' '}| <strong>Status:</strong> <span style={{ color: req.status === 'Pending' ? '#856404' : req.status === 'Approved' ? '#155724' : req.status === 'Rejected' ? '#721c24' : '#0c5460' }}>{req.status}</span>
+                </div>
+                <div style={{ fontSize: 13, color: '#666' }}>Submitted: {new Date(req.request_date).toLocaleString()}</div>
+              </div>
+              <div style={{ marginBottom: 6 }}><strong>Tracking #:</strong> {req.tracking_number}</div>
+              {req.order_id && <div style={{ marginBottom: 6 }}><strong>Order ID:</strong> {req.order_id}</div>}
+              <div style={{ marginBottom: 6 }}><strong>Reason:</strong> {req.reason}</div>
+              {req.comments && <div style={{ marginBottom: 6 }}><strong>Comments:</strong> {req.comments}</div>}
+              <div style={{ marginBottom: 6 }}><strong>Email:</strong> {req.customer_email}</div>
+              {req.customer_phone && <div style={{ marginBottom: 6 }}><strong>Phone:</strong> {req.customer_phone}</div>}
+              <div style={{ marginTop: 8 }}>
+                <strong>Images:</strong>
+                {images && images.length > 0 ? (
+                  <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
+                    {images.map((img, idx) => (
+                      <img key={idx} src={img} alt={`Request Image ${idx + 1}`} style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 6, border: '1px solid #ddd' }} />
+                    ))}
+                  </div>
+                ) : (
+                  <span style={{ color: '#999', marginLeft: 8 }}>No images uploaded</span>
+                )}
+              </div>
+            </div>
+          );
+        })
+      )}
+    </div>
+  );
+
+  if (!returnedOrders.length && requests.length === 0) return <p>No returned orders or requests found.</p>;
 
   return (
     <div className="order-list">
       <ToastContainer position="bottom-center" autoClose={2000} hideProgressBar />
+      {/* Backend requests section */}
+      {renderRequestsSection()}
 
       {/* Return popup */}
       {returningOrder && (
@@ -126,6 +193,7 @@ const OrderReturns = ({ orders, handleProductClick, slugify, isCancelable, cance
         </div>
       )}
 
+      {/* Existing returned orders display */}
       {returnedOrders.map((order) => (
         <div key={order.id} className="order-card-simple">
           {/* Header */}
@@ -140,58 +208,56 @@ const OrderReturns = ({ orders, handleProductClick, slugify, isCancelable, cance
 
           {/* Products */}
           <div
-  className="order-items-grid-simple"
-  style={{
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '12px',
-    marginBottom: '16px',
-  }}
->
-  {order.line_items.map((item) => {
-    const refundForItem = order.refunds?.find((r) =>
-      r.refunded_items?.some((ri) => ri.id === item.id)
-    );
-
-    return (
-      <div
-        key={item.id}
-        className="order-product-simple"
-        onClick={() => handleProductClick(slugify(item.name))}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') handleProductClick(slugify(item.name));
-        }}
-        style={{
-          width: 120,
-          cursor: 'pointer',
-          textAlign: 'center',
-          border: '1px solid #eee',
-          borderRadius: 6,
-          padding: 8,
-          backgroundColor: '#fafafa',
-          transition: 'box-shadow 0.2s ease',
-        }}
-      >
-        <img
-          src={item.image?.src || 'https://via.placeholder.com/100'}
-          alt={item.name}
-          style={{ width: '100%', height: 100, objectFit: 'contain', marginBottom: 6 }}
-        />
-        <div className="product-price">
-          {order.currency} {item.price} {refundForItem ? '(Returned)' : ''}
-        </div>
-        {refundForItem?.reason && (
-          <div className="return-reason">
-            <strong>Reason:</strong> {refundForItem.reason}
+            className="order-items-grid-simple"
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '12px',
+              marginBottom: '16px',
+            }}
+          >
+            {order.line_items.map((item) => {
+              const refundForItem = order.refunds?.find((r) =>
+                r.refunded_items?.some((ri) => ri.id === item.id)
+              );
+              return (
+                <div
+                  key={item.id}
+                  className="order-product-simple"
+                  onClick={() => handleProductClick(slugify(item.name))}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleProductClick(slugify(item.name));
+                  }}
+                  style={{
+                    width: 120,
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                    border: '1px solid #eee',
+                    borderRadius: 6,
+                    padding: 8,
+                    backgroundColor: '#fafafa',
+                    transition: 'box-shadow 0.2s ease',
+                  }}
+                >
+                  <img
+                    src={item.image?.src || 'https://via.placeholder.com/100'}
+                    alt={item.name}
+                    style={{ width: '100%', height: 100, objectFit: 'contain', marginBottom: 6 }}
+                  />
+                  <div className="product-price">
+                    {order.currency} {item.price} {refundForItem ? '(Returned)' : ''}
+                  </div>
+                  {refundForItem?.reason && (
+                    <div className="return-reason">
+                      <strong>Reason:</strong> {refundForItem.reason}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        )}
-      </div>
-    );
-  })}
-</div>
-
 
           {/* Summary */}
           <div className="order-summary-simple">
