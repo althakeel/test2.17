@@ -41,6 +41,16 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
   const [loadingSavedAddresses, setLoadingSavedAddresses] = useState(false);
   const [showSavedAddresses, setShowSavedAddresses] = useState(false);
 
+  // Debug: Log formData when component loads
+  useEffect(() => {
+    console.log('📝 AddressForm loaded with formData:', {
+      phone_prefix: formData?.shipping?.phone_prefix,
+      phone_number: formData?.shipping?.phone_number,
+      full_phone: `+971${formData?.shipping?.phone_prefix || ''}${formData?.shipping?.phone_number || ''}`,
+      all_shipping: formData?.shipping
+    });
+  }, []);
+
   // Update marker position when initialCoordinates change
   useEffect(() => {
     if (initialCoordinates) {
@@ -244,22 +254,26 @@ const AddressForm = ({ formData, onChange, onSubmit, onClose, saving, error, car
       stateCode = stateObj ? stateObj.code : 'DXB'; // Default to Dubai if not found
     }
     
-    // Update all form fields
+    // Update all form fields and clear errors
     if (street) {
       onChange({ target: { name: 'street', value: street } }, 'shipping');
+      setFormErrors((prev) => ({ ...prev, street: '' }));
     }
     if (city) {
       onChange({ target: { name: 'city', value: city } }, 'shipping');
+      setCityInput(city); // Update city input for autocomplete
+      setFormErrors((prev) => ({ ...prev, city: '' }));
     }
     if (stateCode) {
       onChange({ target: { name: 'state', value: stateCode } }, 'shipping');
+      setFormErrors((prev) => ({ ...prev, state: '' }));
     }
     
     setMarkerPosition({ lat, lng });
     setMapSelected(true);
     
     // Show success message
-    console.log('Form updated with address');
+    console.log('Form updated with address - street:', street, 'city:', city, 'state:', stateCode);
   };
 
   // --------------------------

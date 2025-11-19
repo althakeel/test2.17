@@ -41,11 +41,22 @@ const extractAddress = (place) => {
     } else if (types.includes("locality") && !city) {
       city = c.long_name;
     }
-    if (types.includes("administrative_area_level_1")) state = c.long_name; // Changed to long_name for full state name
+    if (types.includes("administrative_area_level_1")) state = c.long_name;
     if (types.includes("country")) country = c.long_name;
   });
 
-  console.log('Extracted address from map:', { street, city, state, country });
+  // If street is empty, try to use the formatted_address or create from city
+  if (!street || street.trim() === "") {
+    if (place.formatted_address) {
+      // Use the first line of formatted address as street
+      const addressLines = place.formatted_address.split(',');
+      street = addressLines[0]?.trim() || "";
+    } else if (city) {
+      street = city; // Fallback to city name
+    }
+  }
+
+  console.log('Extracted address from map:', { street, city, state, country, formatted: place.formatted_address });
   return { street, city, state, country };
 };
 

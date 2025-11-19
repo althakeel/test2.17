@@ -198,6 +198,13 @@ useEffect(() => {
         const billingPhone = parsePhone(customer.billing.phone);
         const shippingPhone = customer.shipping.phone ? parsePhone(customer.shipping.phone) : billingPhone;
 
+        console.log('🔢 Phone parsing results:', {
+          billingPhone,
+          shippingPhone,
+          raw_billing: customer.billing.phone,
+          raw_shipping: customer.shipping.phone
+        });
+
         const fetchedData = {
           billing: {
             first_name: customer.billing.first_name || '',
